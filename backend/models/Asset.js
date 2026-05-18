@@ -265,6 +265,11 @@ const assetSchema = new mongoose.Schema(
       default: "",
     },
 
+    customFields: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
+
     // QR Code
     qrCode: {
       type: String,

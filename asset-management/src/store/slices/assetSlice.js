@@ -104,9 +104,10 @@ export const deleteAsset = createAsyncThunk(
 
 export const refreshQrCodes = createAsyncThunk(
   "asset/refreshQrCodes",
-  async (_, thunkAPI) => {
+  async (scannerOrigin, thunkAPI) => {
     try {
-      const response = await apiInstance.post("/qr/refresh");
+      const headers = scannerOrigin ? { "x-scanner-origin": scannerOrigin } : undefined;
+      const response = await apiInstance.post("/qr/refresh", null, { headers });
 
       return response.data;
     } catch (error) {

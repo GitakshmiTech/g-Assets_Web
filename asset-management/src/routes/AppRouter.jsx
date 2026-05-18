@@ -8,6 +8,7 @@ import AddAsset from "../components/AddAsset";
 import Assets from "../pages/Assets";
 import { Login, Register } from "../pages/Auth";
 import Dashboard from "../pages/Dashboard";
+import MasterEditor from "../pages/MasterEditor";
 import {
   Assignments,
   Audit,
@@ -42,6 +43,7 @@ function AppRouter() {
           <Route path="/audit" element={<Audit />} />
           <Route path="/reports" element={<Reports />} />
           <Route path="/roles" element={<Roles />} />
+          <Route path="/master-editor" element={<MasterEditor />} />
           <Route path="/scan-demo" element={<ScanDemo />} />
           <Route path="/add-asset" element={<AddAsset />} />
           <Route path="/edit-asset/:id" element={<AddAsset />} />

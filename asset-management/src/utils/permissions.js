@@ -35,6 +35,7 @@ export const ROUTE_ROLES = {
   "/audit": ["SUPER_ADMIN", "AUDITOR"],
   "/reports": ["SUPER_ADMIN", "ADMIN"],
   "/roles": ["SUPER_ADMIN"],
+  "/master-editor": ["SUPER_ADMIN", "ADMIN", "IT_STAFF"],
   "/scan-demo": ["SUPER_ADMIN", "ADMIN", "IT_STAFF"],
   "/add-asset": ["SUPER_ADMIN", "ADMIN", "IT_STAFF"],
   "/edit-asset": ["SUPER_ADMIN", "ADMIN", "IT_STAFF"],

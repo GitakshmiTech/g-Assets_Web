@@ -93,28 +93,30 @@ const appendTimeline = (asset, title, detail) => {
 const isLocalHost = (host = "") =>
   host.includes("localhost") || host.includes("127.0.0.1") || host.includes("::1");
 
-const getClientUrl = (req) => {
-  const origin = req.get("x-client-origin") || req.get("origin");
+const cleanUrl = (url = "") => String(url).trim().replace(/\/+$/, "");
 
-  if (origin && !isLocalHost(origin)) {
-    return origin;
+const getServerUrl = (req) => {
+  const scannerOrigin = cleanUrl(req.get("x-scanner-origin"));
+
+  if (scannerOrigin) {
+    return scannerOrigin;
   }
 
   const requestHost = req.get("host") || "";
-  const requestHostname = requestHost.split(":")[0];
+  const protocol = (req.get("x-forwarded-proto") || req.protocol || "http").split(",")[0];
 
-  if (requestHostname && !isLocalHost(requestHostname)) {
-    const protocol = req.protocol || "http";
-    const frontendPort = process.env.CLIENT_PORT || "5173";
-    return `${protocol}://${requestHostname}:${frontendPort}`;
-  }
+  return cleanUrl(`${protocol}://${requestHost}`);
+};
 
-  return process.env.CLIENT_URL || origin || "http://localhost:5173";
+const getClientUrl = (req) => {
+  const origin = req.get("x-client-origin") || req.get("origin");
+
+  return cleanUrl(origin || "http://localhost:5173");
 };
 
 const buildQrUrl = (asset, req) => {
-  const clientUrl = getClientUrl(req);
-  return `${clientUrl}/scan/${asset._id}?t=${asset.qrToken}`;
+  const serverUrl = getServerUrl(req);
+  return `${serverUrl}/api/scan/${asset._id}?t=${asset.qrToken}`;
 };
 
 const generateQrCode = async (asset, req) => {
@@ -153,6 +155,174 @@ const groupRepairCost = (items, key) =>
     acc[value] = (acc[value] || 0) + getRepairCost(asset);
     return acc;
   }, {});
+
+const escapeHtml = (value = "") =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+
+const formatDate = (value) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "-" : date.toLocaleDateString("en-IN");
+};
+
+const detailRow = (label, value) => `
+  <div class="detail-row">
+    <dt>${escapeHtml(label)}</dt>
+    <dd>${escapeHtml(value || "-")}</dd>
+  </div>`;
+
+const renderScanAssetPage = (asset) => {
+  const warrantyDays = getWarrantyDays(asset);
+  const warrantyText =
+    warrantyDays === null
+      ? "-"
+      : warrantyDays < 0
+        ? `Expired ${Math.abs(warrantyDays)} days ago`
+        : `${warrantyDays} days remaining`;
+
+  return `<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>${escapeHtml(asset.assetName || "Asset Details")}</title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f4f7fb;
+        color: #172033;
+      }
+      .page {
+        width: min(920px, 100%);
+        margin: 0 auto;
+        padding: 24px 16px 40px;
+      }
+      .header {
+        background: #0f5f8f;
+        color: #fff;
+        border-radius: 8px;
+        padding: 22px;
+        margin-bottom: 16px;
+      }
+      .eyebrow {
+        margin: 0 0 8px;
+        font-size: 12px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        opacity: .82;
+      }
+      h1 {
+        margin: 0;
+        font-size: 28px;
+        line-height: 1.2;
+      }
+      .code {
+        display: inline-block;
+        margin-top: 12px;
+        padding: 6px 10px;
+        border-radius: 6px;
+        background: rgba(255,255,255,.16);
+        font-weight: 700;
+      }
+      .status {
+        margin-top: 12px;
+        font-weight: 700;
+      }
+      .section {
+        background: #fff;
+        border: 1px solid #dce5ef;
+        border-radius: 8px;
+        padding: 18px;
+        margin-top: 14px;
+      }
+      h2 {
+        margin: 0 0 14px;
+        font-size: 18px;
+      }
+      dl {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        margin: 0;
+      }
+      .detail-row {
+        border-bottom: 1px solid #edf1f5;
+        padding-bottom: 10px;
+      }
+      dt {
+        color: #607083;
+        font-size: 12px;
+        margin-bottom: 4px;
+      }
+      dd {
+        margin: 0;
+        font-weight: 700;
+        overflow-wrap: anywhere;
+      }
+      @media (max-width: 640px) {
+        .page { padding: 14px; }
+        .header { padding: 18px; }
+        h1 { font-size: 23px; }
+        dl { grid-template-columns: 1fr; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <section class="header">
+        <p class="eyebrow">QR Scan Details</p>
+        <h1>${escapeHtml(asset.assetName || "Asset")}</h1>
+        <div class="code">${escapeHtml(asset.assetCode || asset._id)}</div>
+        <div class="status">Status: ${escapeHtml(asset.assetStatus || "-")}</div>
+      </section>
+
+      <section class="section">
+        <h2>Asset Information</h2>
+        <dl>
+          ${detailRow("Category", asset.category)}
+          ${detailRow("Type", asset.assetType)}
+          ${detailRow("Serial Number", asset.serialNumber)}
+          ${detailRow("Model", asset.model)}
+          ${detailRow("Manufacturer", asset.manufacturer)}
+          ${detailRow("Office", asset.officeName)}
+          ${detailRow("Department", asset.department)}
+          ${detailRow("Assigned To", asset.assignedTo)}
+        </dl>
+      </section>
+
+      <section class="section">
+        <h2>Purchase & Warranty</h2>
+        <dl>
+          ${detailRow("Purchase Date", formatDate(asset.purchaseDate))}
+          ${detailRow("Warranty Start", formatDate(asset.warrantyStart))}
+          ${detailRow("Warranty End", formatDate(asset.warrantyEnd))}
+          ${detailRow("Warranty Status", warrantyText)}
+          ${detailRow("Maintenance Due", formatDate(asset.maintenanceDueDate))}
+          ${detailRow("Price", asset.price ? `₹${asset.price}` : "-")}
+        </dl>
+      </section>
+
+      <section class="section">
+        <h2>Network Details</h2>
+        <dl>
+          ${detailRow("IP Address", asset.ipAddress)}
+          ${detailRow("MAC Address", asset.macAddress)}
+          ${detailRow("Host Name", asset.hostName)}
+          ${detailRow("Operating System", asset.operatingSystem)}
+        </dl>
+      </section>
+    </main>
+  </body>
+</html>`;
+};
 
 export const getAllAssets = async (req, res) => {
   try {
@@ -501,12 +671,40 @@ export const getReports = async (req, res) => {
 export const getScanAsset = async (req, res) => {
   try {
     const asset = await Asset.findById(req.params.id);
+    const wantsHtml = req.accepts(["html", "json"]) === "html";
 
     if (!asset || asset.qrToken !== req.query.t) {
+      if (wantsHtml) {
+        return res.status(404).send(`<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Invalid QR Code</title>
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center; font-family: Arial, Helvetica, sans-serif; background: #f4f7fb; color: #172033; }
+      main { width: min(520px, calc(100% - 28px)); background: #fff; border: 1px solid #dce5ef; border-radius: 8px; padding: 24px; text-align: center; }
+      h1 { margin: 0 0 10px; font-size: 24px; }
+      p { margin: 0; color: #607083; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Invalid or expired QR code</h1>
+      <p>Please ask the asset team to refresh this QR code.</p>
+    </main>
+  </body>
+</html>`);
+      }
+
       return res.status(404).json({
         success: false,
         message: "Invalid or expired QR code",
       });
+    }
+
+    if (wantsHtml) {
+      return res.status(200).send(renderScanAssetPage(asset));
     }
 
     res.status(200).json(asset);
@@ -536,8 +734,9 @@ export const refreshQrCodes = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: "QR codes refreshed for current network",
+      message: "QR codes refreshed for backend scan page",
       clientUrl: getClientUrl(req),
+      scannerUrl: getServerUrl(req),
       count: assets.length,
     });
   } catch (error) {

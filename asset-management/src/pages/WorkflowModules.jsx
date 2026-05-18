@@ -528,20 +528,22 @@ export function ScanDemo() {
   const dispatch = useDispatch();
   const { showToast } = useToast();
   const [message, setMessage] = useState("");
+  const [scannerOrigin, setScannerOrigin] = useState("");
   const currentOrigin = getQrClientOrigin();
 
   const refreshForNetwork = async () => {
     try {
-      const result = await dispatch(refreshQrCodes()).unwrap();
+      const scannerUrl = scannerOrigin.trim().replace(/\/+$/, "");
+      const result = await dispatch(refreshQrCodes(scannerUrl)).unwrap();
       await dispatch(fetchAssetList());
 
-      if (result?.clientUrl) {
-        setMessage(`QR codes now point to ${result.clientUrl}`);
+      if (result?.scannerUrl) {
+        setMessage(`QR codes now open ${result.scannerUrl}/api/scan/...`);
       }
 
       showToast({
         title: "QR codes refreshed",
-        message: "QR scanner links now use the current network URL.",
+        message: "QR scanner links now open the backend scan page.",
       });
     } catch (error) {
       showToast({
@@ -557,10 +559,22 @@ export function ScanDemo() {
       <PageTitle
         eyebrow="QR Management"
         title="QR Scanner Console"
-        description={`Current scanner URL base: ${currentOrigin}`}
-        action={<button className="module-button" onClick={refreshForNetwork}>Refresh QR For Current Wi-Fi</button>}
+        description={`Current app URL base: ${currentOrigin}`}
+        action={<button className="module-button" onClick={refreshForNetwork}>Refresh QR Scan Pages</button>}
       />
       {message && <p className="network-note">{message}</p>}
+      <div className="action-panel">
+        <h3>Public Backend URL</h3>
+        <input
+          type="url"
+          value={scannerOrigin}
+          onChange={(event) => setScannerOrigin(event.target.value)}
+          placeholder="https://your-public-backend-url"
+        />
+        <button className="module-button" onClick={refreshForNetwork}>
+          Apply To QR Codes
+        </button>
+      </div>
       <DataTable
         columns={[
           { key: "assetName", label: "Asset", render: (row) => <AssetLink asset={row} /> },

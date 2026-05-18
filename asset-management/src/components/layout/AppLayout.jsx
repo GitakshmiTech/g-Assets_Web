@@ -7,6 +7,7 @@ import {
   FaChartBar,
   FaClipboardCheck,
   FaExchangeAlt,
+  FaEdit,
   FaHome,
   FaLaptop,
   FaQrcode,
@@ -22,6 +23,7 @@ import "./AppLayout.css";
 const navItems = [
   { to: "/", label: "Dashboard", icon: <FaHome />, menuRoles: ["SUPER_ADMIN", "ADMIN"] },
   { to: "/assets", label: "Assets", icon: <FaLaptop />, menuRoles: ["SUPER_ADMIN", "ADMIN", "IT_STAFF"] },
+  { to: "/master-editor", label: "Master Editor", icon: <FaEdit />, menuRoles: ["SUPER_ADMIN", "ADMIN", "IT_STAFF"] },
   { to: "/requests", label: "Requests", icon: <FaClipboardCheck />, menuRoles: ["SUPER_ADMIN", "ADMIN", "IT_STAFF"] },
   { to: "/inventory", label: "Inventory", icon: <FaBoxes />, menuRoles: [] },
   { to: "/employees", label: "Employee Portal", icon: <FaUserFriends />, menuRoles: ["SUPER_ADMIN", "EMPLOYEE"] },

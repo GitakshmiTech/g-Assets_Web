@@ -3,17 +3,24 @@ import * as yup from "yup";
 const isComputerAsset = (category) =>
   ["laptop", "pc", "desktop", "computer"].includes(String(category || "").trim().toLowerCase());
 
-export const assetSchema = yup.object().shape({
-  assetName: yup.string().required("Asset Name is required"),
+const isVisible = (config, name) => config[name]?.visible !== false;
+const isRequired = (config, name) => config[name]?.required === true;
+const requiredWhenConfigured = (config, name, label) =>
+  isVisible(config, name) && isRequired(config, name)
+    ? yup.string().required(`${label} is required`)
+    : yup.string();
 
-  category: yup.string().required("Category is required"),
+export const createAssetSchema = (formConfig = {}) => yup.object().shape({
+  assetName: requiredWhenConfigured(formConfig, "assetName", "Asset Name"),
+
+  category: requiredWhenConfigured(formConfig, "category", "Category"),
 
   subCategory: yup.string(),
 
-  assetStatus: yup.string().required("Asset Status is required"),
+  assetStatus: requiredWhenConfigured(formConfig, "assetStatus", "Asset Status"),
 
   assignedTo: yup.string().when("assetStatus", {
-    is: "ASSIGNED",
+    is: (value) => value === "ASSIGNED" && isVisible(formConfig, "assignedTo"),
     then: (schema) => schema.required("Assigned To is required"),
     otherwise: (schema) => schema.notRequired(),
   }),
@@ -134,11 +141,13 @@ export const assetSchema = yup.object().shape({
 
   assetDescription: yup.string(),
 
-  deviceOwnedBy: yup.string().required("Device owner is required"),
+  deviceOwnedBy: requiredWhenConfigured(formConfig, "deviceOwnedBy", "Device owner"),
 
   ownerName: yup.string().when("deviceOwnedBy", {
-    is: "Other",
+    is: (value) => value === "Other" && isVisible(formConfig, "ownerName"),
     then: (schema) => schema.required("Owner Name is required"),
     otherwise: (schema) => schema.notRequired(),
   }),
 });
+
+export const assetSchema = createAssetSchema();

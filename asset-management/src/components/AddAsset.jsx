@@ -1,9 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 import { useDispatch, useSelector } from "react-redux";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { yupResolver } from "@hookform/resolvers/yup";
-import { assetSchema } from "../schema/assetSchema";
+import { createAssetSchema } from "../schema/assetSchema";
 import {
   addAsset,
   fetchSingleAsset,
@@ -11,6 +11,7 @@ import {
 } from "../store/slices/assetSlice";
 import FormUsersInputText from "./common/FormUsersInputText";
 import { useToast } from "./toast/toastStore";
+import { getAssetFormSections, loadAssetFormConfig } from "../utils/assetFormBuilder";
 import "./AddAsset.css";
 
 const computerCategories = ["laptop", "pc", "desktop", "computer"];
@@ -34,17 +35,23 @@ function AddAsset() {
   const isEditMode = Boolean(id);
   const isRequestMode = location.pathname.includes("request");
   const { loading, singleAssetData } = useSelector((state) => state.assetList);
+  const [assetFormConfig, setAssetFormConfig] = useState(() => loadAssetFormConfig());
   const formatDate = (value) => value?.split("T")[0] || "";
+  const activeAssetSchema = useMemo(
+    () => createAssetSchema(assetFormConfig),
+    [assetFormConfig],
+  );
 
   const {
     register,
     handleSubmit,
     reset,
     control,
+    setError,
     formState: { errors },
   } = useForm({
     mode: "all",
-    resolver: yupResolver(assetSchema),
+    resolver: yupResolver(activeAssetSchema),
     defaultValues: {
       assetStatus: "AVAILABLE",
       deviceOwnedBy: "Me",
@@ -60,10 +67,46 @@ function AddAsset() {
   const deviceOwnedBy = useWatch({ control, name: "deviceOwnedBy" });
   const category = useWatch({ control, name: "category" });
   const showComputerFields = isComputerCategory(category);
+  const isFieldVisible = (name) => assetFormConfig[name]?.visible !== false;
+  const isFieldRequired = (name) => assetFormConfig[name]?.required === true;
+  const formSections = getAssetFormSections(assetFormConfig);
+  const baseSectionKeys = [
+    "Asset Information",
+    "IP Configuration",
+    "Computer Specifications",
+    "Request & Purchase Details",
+    "Warranty, Office & Assignment",
+    "Retirement & Documentation",
+  ];
+  const allCustomFields = formSections.flatMap((section) =>
+    section.fields.filter((field) => field.custom).map((field) => ({
+      ...field,
+      sectionKey: section.key,
+      sectionTitle: section.title,
+    })),
+  );
+  const getCustomFieldsForSection = (sectionKey) =>
+    allCustomFields.filter((field) => field.sectionKey === sectionKey && isFieldVisible(field.name));
+  const getSectionTitle = (sectionKey) =>
+    formSections.find((section) => section.key === sectionKey)?.title || sectionKey;
+  const customOnlySections = formSections.filter(
+    (section) =>
+      !baseSectionKeys.includes(section.key) &&
+      section.fields.some((field) => field.custom && isFieldVisible(field.name)),
+  );
+  const fieldLabelMap = formSections
+    .flatMap((section) => section.fields)
+    .reduce((acc, field) => ({ ...acc, [field.name]: field.label }), {});
 
   useEffect(() => {
     if (id) dispatch(fetchSingleAsset(id));
   }, [dispatch, id]);
+
+  useEffect(() => {
+    const syncBuilderConfig = () => setAssetFormConfig(loadAssetFormConfig());
+    window.addEventListener("asset-form-builder-updated", syncBuilderConfig);
+    return () => window.removeEventListener("asset-form-builder-updated", syncBuilderConfig);
+  }, []);
 
   useEffect(() => {
     if (id && singleAssetData) {
@@ -81,6 +124,23 @@ function AddAsset() {
   }, [singleAssetData, reset, id]);
 
   const onSubmit = async (data) => {
+    const missingField = Object.entries(assetFormConfig).find(
+      ([name, field]) =>
+        !isRequestMode &&
+        field.visible &&
+        field.required &&
+        !String(data[name] || "").trim(),
+    );
+
+    if (missingField) {
+      const [name] = missingField;
+      setError(name, {
+        type: "manual",
+        message: `${fieldLabelMap[name] || "This field"} is required`,
+      });
+      return;
+    }
+
     const payload = {
       ...data,
       warrantyPeriod: Number(data.warrantyPeriod || 0),
@@ -88,6 +148,16 @@ function AddAsset() {
       price: Number(data.price || 0),
       warrantyReminderDays: Number(data.warrantyReminderDays || 10),
     };
+
+    if (allCustomFields.length) {
+      payload.customFields = allCustomFields.reduce((acc, field) => {
+        if (isFieldVisible(field.name)) {
+          acc[`${field.sectionTitle}.${field.label}`] = data[field.name] || "";
+        }
+        delete payload[field.name];
+        return acc;
+      }, {});
+    }
 
     if (isRequestMode) {
       payload.assetStatus = data.assetStatus || "AVAILABLE";
@@ -149,6 +219,29 @@ function AddAsset() {
       });
     }
   };
+
+  const renderTextField = (inputLabel, inputname, extraProps = {}) =>
+    isFieldVisible(inputname) ? (
+      <FormUsersInputText
+        inputLabel={fieldLabelMap[inputname] || inputLabel}
+        inputname={inputname}
+        register={register}
+        errors={errors}
+        mandatory={isFieldRequired(inputname)}
+        {...extraProps}
+      />
+    ) : null;
+
+  const renderDateField = (inputLabel, inputname) =>
+    isFieldVisible(inputname) ? (
+      <div className="input-wrapper">
+        <label className="input-label">
+          {fieldLabelMap[inputname] || inputLabel}
+          {isFieldRequired(inputname) && <span className="required">*</span>}
+        </label>
+        <input type="date" {...register(inputname)} className="custom-input" />
+      </div>
+    ) : null;
 
   return (
     <div className="page-wrapper">
@@ -259,185 +352,201 @@ function AddAsset() {
           ) : (
             <>
           <section className="form-section">
-            <h3>Asset Information</h3>
+            <h3>{getSectionTitle("Asset Information")}</h3>
             <p className="section-desc">Capture asset identity, QR, and status details.</p>
             <div className="form-grid">
-              <div className="grid-col-span-2">
-                <FormUsersInputText
-                  inputLabel="Asset Name"
-                  inputname="assetName"
-                  register={register}
-                  errors={errors}
-                  mandatory={true}
-                />
-              </div>
-              <FormUsersInputText inputLabel="Category" inputname="category" register={register} errors={errors} mandatory={true} />
-              <FormUsersInputText inputLabel="Sub Category" inputname="subCategory" register={register} errors={errors} />
-              <div className="input-wrapper">
-                <label className="input-label">
-                  Asset Status<span className="required">*</span>
-                </label>
-                <select {...register("assetStatus")} className="custom-input">
-                  <option value="AVAILABLE">Available</option>
-                  <option value="ASSIGNED">Assigned</option>
-                  <option value="UNDER_REPAIR">Under Repair</option>
-                  <option value="RETURNED">Returned</option>
-                  <option value="DAMAGED">Damaged</option>
-                  <option value="LOST">Lost</option>
-                  <option value="RETIRED">Retired</option>
-                  <option value="DISPOSED">Disposed</option>
-                  <option value="RECYCLED">Recycled</option>
-                </select>
-              </div>
-              <FormUsersInputText inputLabel="Assigned To" inputname="assignedTo" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Serial Number" inputname="serialNumber" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Asset Code" inputname="assetCode" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Brand" inputname="brand" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Model" inputname="model" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Asset Type" inputname="assetType" register={register} errors={errors} />
+              {isFieldVisible("assetName") && (
+                <div className="grid-col-span-2">
+                  {renderTextField("Asset Name", "assetName")}
+                </div>
+              )}
+              {renderTextField("Category", "category")}
+              {renderTextField("Sub Category", "subCategory")}
+              {isFieldVisible("assetStatus") && (
+                <div className="input-wrapper">
+                  <label className="input-label">
+                    {fieldLabelMap.assetStatus || "Asset Status"}
+                    {isFieldRequired("assetStatus") && <span className="required">*</span>}
+                  </label>
+                  <select {...register("assetStatus")} className="custom-input">
+                    <option value="AVAILABLE">Available</option>
+                    <option value="ASSIGNED">Assigned</option>
+                    <option value="UNDER_REPAIR">Under Repair</option>
+                    <option value="RETURNED">Returned</option>
+                    <option value="DAMAGED">Damaged</option>
+                    <option value="LOST">Lost</option>
+                    <option value="RETIRED">Retired</option>
+                    <option value="DISPOSED">Disposed</option>
+                    <option value="RECYCLED">Recycled</option>
+                  </select>
+                </div>
+              )}
+              {renderTextField("Assigned To", "assignedTo")}
+              {renderTextField("Serial Number", "serialNumber")}
+              {renderTextField("Asset Code", "assetCode")}
+              {renderTextField("Brand", "brand")}
+              {renderTextField("Model", "model")}
+              {renderTextField("Asset Type", "assetType")}
+              {getCustomFieldsForSection("Asset Information").map((field) =>
+                renderTextField(field.label, field.name),
+              )}
             </div>
           </section>
 
           {showComputerFields && (
             <>
               <section className="form-section conditional-section">
-                <h3>IP Configuration</h3>
+                <h3>{getSectionTitle("IP Configuration")}</h3>
                 <p className="section-desc">Visible only for Laptop, PC, Desktop, or Computer assets.</p>
                 <div className="form-grid">
-                  <FormUsersInputText inputLabel="IP Address" inputname="ipAddress" register={register} errors={errors} />
-                  <FormUsersInputText inputLabel="MAC Address" inputname="macAddress" register={register} errors={errors} />
-                  <FormUsersInputText inputLabel="Host / Device Name" inputname="hostName" register={register} errors={errors} />
-                  <FormUsersInputText inputLabel="Network Type" inputname="networkType" register={register} errors={errors} />
-                  <FormUsersInputText inputLabel="Subnet" inputname="subnet" register={register} errors={errors} />
-                  <FormUsersInputText inputLabel="Gateway" inputname="gateway" register={register} errors={errors} />
+                  {renderTextField("IP Address", "ipAddress")}
+                  {renderTextField("MAC Address", "macAddress")}
+                  {renderTextField("Host / Device Name", "hostName")}
+                  {renderTextField("Network Type", "networkType")}
+                  {renderTextField("Subnet", "subnet")}
+                  {renderTextField("Gateway", "gateway")}
+                  {getCustomFieldsForSection("IP Configuration").map((field) =>
+                    renderTextField(field.label, field.name),
+                  )}
                 </div>
               </section>
 
               <section className="form-section conditional-section">
-                <h3>Computer Specifications</h3>
+                <h3>{getSectionTitle("Computer Specifications")}</h3>
                 <p className="section-desc">Hardware and software details for computer-style assets.</p>
                 <div className="form-grid">
-                  <FormUsersInputText inputLabel="Operating System" inputname="operatingSystem" register={register} errors={errors} />
-                  <FormUsersInputText inputLabel="Processor" inputname="processor" register={register} errors={errors} />
-                  <FormUsersInputText inputLabel="RAM" inputname="ram" register={register} errors={errors} />
-                  <FormUsersInputText inputLabel="Storage" inputname="storage" register={register} errors={errors} />
-                  <FormUsersInputText inputLabel="Antivirus" inputname="antivirus" register={register} errors={errors} />
-                  <FormUsersInputText inputLabel="Domain" inputname="domainName" register={register} errors={errors} />
+                  {renderTextField("Operating System", "operatingSystem")}
+                  {renderTextField("Processor", "processor")}
+                  {renderTextField("RAM", "ram")}
+                  {renderTextField("Storage", "storage")}
+                  {renderTextField("Antivirus", "antivirus")}
+                  {renderTextField("Domain", "domainName")}
+                  {getCustomFieldsForSection("Computer Specifications").map((field) =>
+                    renderTextField(field.label, field.name),
+                  )}
                 </div>
               </section>
             </>
           )}
 
           <section className="form-section">
-            <h3>Request & Purchase Details</h3>
+            <h3>{getSectionTitle("Request & Purchase Details")}</h3>
             <p className="section-desc">Track request approvals, vendor purchase, and invoice data.</p>
             <div className="form-grid">
-              <FormUsersInputText inputLabel="Request ID" inputname="requestId" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Requested By" inputname="requestedBy" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Priority" inputname="requestPriority" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Reason" inputname="requestReason" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Request Status" inputname="requestStatus" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Manager Approval" inputname="managerApproval" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="IT/Admin Approval" inputname="adminApproval" register={register} errors={errors} />
-              <div className="input-wrapper">
-                <label className="input-label">Purchase Date</label>
-                <input type="date" {...register("purchaseDate")} className="custom-input" />
-              </div>
-              <FormUsersInputText inputLabel="Vendor" inputname="vendor" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Invoice Number" inputname="invoiceNumber" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Purchase Cost" inputname="price" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Purchase Status" inputname="purchaseStatus" register={register} errors={errors} />
-            </div>
-          </section>
-
-          <section className="form-section">
-            <h3>Warranty, Office & Assignment</h3>
-            <p className="section-desc">Manage reminders, branch placement, and employee assignment.</p>
-            <div className="form-grid">
-              <FormUsersInputText inputLabel="Warranty Period (Months)" inputname="warrantyPeriod" register={register} errors={errors} />
-              <div className="input-wrapper">
-                <label className="input-label">Warranty Start</label>
-                <input type="date" {...register("warrantyStart")} className="custom-input" />
-              </div>
-              <div className="input-wrapper">
-                <label className="input-label">Warranty End</label>
-                <input type="date" {...register("warrantyEnd")} className="custom-input" />
-              </div>
-              <FormUsersInputText inputLabel="Reminder Days" inputname="warrantyReminderDays" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Maintenance Period (Months)" inputname="maintenancePeriod" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Office Name" inputname="officeName" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Branch Code" inputname="branchCode" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Floor" inputname="floor" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Department" inputname="department" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Room/Cabin" inputname="room" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="City" inputname="city" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="State" inputname="state" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Office Contact Person" inputname="officeContactPerson" register={register} errors={errors} />
-              <FormUsersInputText
-                inputLabel="Office Phone"
-                inputname="officePhone"
-                register={register}
-                errors={errors}
-                inputType="tel"
-                inputMode="numeric"
-                maxLength={10}
-              />
-              <div className="input-wrapper">
-                <label className="input-label">Assigned Date</label>
-                <input type="date" {...register("assignedDate")} className="custom-input" />
-              </div>
-              <FormUsersInputText inputLabel="Employee ID" inputname="employeeId" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Employee Email" inputname="employeeEmail" register={register} errors={errors} inputType="email" />
-              <div className="input-wrapper">
-                <label className="input-label">Expected Return</label>
-                <input type="date" {...register("expectedReturn")} className="custom-input" />
-              </div>
-              <FormUsersInputText inputLabel="Assigned By" inputname="assignedBy" register={register} errors={errors} />
-            </div>
-          </section>
-
-          <section className="form-section">
-            <h3>Retirement & Documentation</h3>
-            <p className="section-desc">Record retirement, disposal, ownership, and supporting notes.</p>
-            <div className="form-grid">
-              <FormUsersInputText inputLabel="Retirement Status" inputname="retirementStatus" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Retirement Approval" inputname="retirementApproval" register={register} errors={errors} />
-              <FormUsersInputText inputLabel="Disposal Method" inputname="disposalMethod" register={register} errors={errors} />
-              <div className="input-wrapper">
-                <label className="input-label">Retirement Date</label>
-                <input type="date" {...register("retirementDate")} className="custom-input" />
-              </div>
-            </div>
-
-            <div className="full-width">
-              <label className="input-label">Asset Description</label>
-              <textarea
-                placeholder="Enter notes, condition, or documentation details"
-                {...register("assetDescription")}
-                className="custom-textarea"
-              />
-            </div>
-
-            <div className="ownership-row">
-              <span className="input-label">Device Owned By:</span>
-              <label className="radio-label">
-                <input type="radio" value="Me" {...register("deviceOwnedBy")} /> Me
-              </label>
-              <label className="radio-label">
-                <input type="radio" value="Other" {...register("deviceOwnedBy")} /> Other
-              </label>
-              {deviceOwnedBy === "Other" && (
-                <div style={{ marginLeft: "20px", flex: 1 }}>
-                  <FormUsersInputText
-                    inputLabel="Owner Name"
-                    inputname="ownerName"
-                    register={register}
-                    errors={errors}
-                  />
-                </div>
+              {renderTextField("Request ID", "requestId")}
+              {renderTextField("Requested By", "requestedBy")}
+              {renderTextField("Priority", "requestPriority")}
+              {renderTextField("Reason", "requestReason")}
+              {renderTextField("Request Status", "requestStatus")}
+              {renderTextField("Manager Approval", "managerApproval")}
+              {renderTextField("IT/Admin Approval", "adminApproval")}
+              {renderDateField("Purchase Date", "purchaseDate")}
+              {renderTextField("Vendor", "vendor")}
+              {renderTextField("Invoice Number", "invoiceNumber")}
+              {renderTextField("Purchase Cost", "price")}
+              {renderTextField("Purchase Status", "purchaseStatus")}
+              {getCustomFieldsForSection("Request & Purchase Details").map((field) =>
+                renderTextField(field.label, field.name),
               )}
             </div>
           </section>
+
+          <section className="form-section">
+            <h3>{getSectionTitle("Warranty, Office & Assignment")}</h3>
+            <p className="section-desc">Manage reminders, branch placement, and employee assignment.</p>
+            <div className="form-grid">
+              {renderTextField("Warranty Period (Months)", "warrantyPeriod")}
+              {renderDateField("Warranty Start", "warrantyStart")}
+              {renderDateField("Warranty End", "warrantyEnd")}
+              {renderTextField("Reminder Days", "warrantyReminderDays")}
+              {renderTextField("Maintenance Period (Months)", "maintenancePeriod")}
+              {renderTextField("Office Name", "officeName")}
+              {renderTextField("Branch Code", "branchCode")}
+              {renderTextField("Floor", "floor")}
+              {renderTextField("Department", "department")}
+              {renderTextField("Room/Cabin", "room")}
+              {renderTextField("City", "city")}
+              {renderTextField("State", "state")}
+              {renderTextField("Office Contact Person", "officeContactPerson")}
+              {renderTextField("Office Phone", "officePhone", {
+                inputType: "tel",
+                inputMode: "numeric",
+                maxLength: 10,
+              })}
+              {renderDateField("Assigned Date", "assignedDate")}
+              {renderTextField("Employee ID", "employeeId")}
+              {renderTextField("Employee Email", "employeeEmail", { inputType: "email" })}
+              {renderDateField("Expected Return", "expectedReturn")}
+              {renderTextField("Assigned By", "assignedBy")}
+              {getCustomFieldsForSection("Warranty, Office & Assignment").map((field) =>
+                renderTextField(field.label, field.name),
+              )}
+            </div>
+          </section>
+
+          <section className="form-section">
+            <h3>{getSectionTitle("Retirement & Documentation")}</h3>
+            <p className="section-desc">Record retirement, disposal, ownership, and supporting notes.</p>
+            <div className="form-grid">
+              {renderTextField("Retirement Status", "retirementStatus")}
+              {renderTextField("Retirement Approval", "retirementApproval")}
+              {renderTextField("Disposal Method", "disposalMethod")}
+              {renderDateField("Retirement Date", "retirementDate")}
+              {getCustomFieldsForSection("Retirement & Documentation").map((field) =>
+                renderTextField(field.label, field.name),
+              )}
+            </div>
+
+            {isFieldVisible("assetDescription") && (
+              <div className="full-width">
+                <label className="input-label">
+                  {fieldLabelMap.assetDescription || "Asset Description"}
+                  {isFieldRequired("assetDescription") && <span className="required">*</span>}
+                </label>
+                <textarea
+                  placeholder="Enter notes, condition, or documentation details"
+                  {...register("assetDescription")}
+                  className="custom-textarea"
+                />
+              </div>
+            )}
+
+            {isFieldVisible("deviceOwnedBy") && (
+              <div className="ownership-row">
+                <span className="input-label">
+                  {fieldLabelMap.deviceOwnedBy || "Device Owned By"}:
+                  {isFieldRequired("deviceOwnedBy") && <span className="required">*</span>}
+                </span>
+                <label className="radio-label">
+                  <input type="radio" value="Me" {...register("deviceOwnedBy")} /> Me
+                </label>
+                <label className="radio-label">
+                  <input type="radio" value="Other" {...register("deviceOwnedBy")} /> Other
+                </label>
+                {deviceOwnedBy === "Other" && isFieldVisible("ownerName") && (
+                <div style={{ marginLeft: "20px", flex: 1 }}>
+                  <FormUsersInputText
+                    inputLabel={fieldLabelMap.ownerName || "Owner Name"}
+                    inputname="ownerName"
+                    register={register}
+                    errors={errors}
+                    mandatory={isFieldRequired("ownerName")}
+                  />
+                </div>
+                )}
+              </div>
+            )}
+          </section>
+
+          {customOnlySections.map((section) => (
+            <section className="form-section" key={section.title}>
+              <h3>{section.title}</h3>
+              <p className="section-desc">Fields added from Master Editor.</p>
+              <div className="form-grid">
+                {section.fields.map((field) => renderTextField(field.label, field.name))}
+              </div>
+            </section>
+          ))}
             </>
           )}
         </div>
