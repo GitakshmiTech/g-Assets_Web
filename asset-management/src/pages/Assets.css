@@ -84,6 +84,20 @@
   min-height: 80px;
   max-height: 85px;
   transition: all var(--transition-fast);
+  position: relative;
+  overflow: hidden;
+}
+
+.dashboard-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--color-primary), var(--color-secondary));
+  opacity: 0.8;
+  transition: opacity var(--transition-fast);
 }
 
 .dashboard-card:hover {

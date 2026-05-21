@@ -149,82 +149,99 @@ export function Register() {
   };
 
   return (
-    <AuthClassicShell title="Register" subtitle="Create a role-based account for GT AMS.">
+    <AuthSplitShell title="Register" subtitle="Create a role-based account for GT AMS.">
       <form className="auth-form" onSubmit={submit} noValidate>
-        <label>Name</label>
-        <input
-          value={form.name}
-          onChange={(e) => {
-            setForm({ ...form, name: e.target.value });
-            if (errors.name) setErrors({ ...errors, name: "" });
-          }}
-          className={errors.name ? "input-error-border" : ""}
-        />
-        {errors.name && <span className="field-error">{errors.name}</span>}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label>Name</label>
+            <input
+              value={form.name}
+              onChange={(e) => {
+                setForm({ ...form, name: e.target.value });
+                if (errors.name) setErrors({ ...errors, name: "" });
+              }}
+              className={errors.name ? "input-error-border" : ""}
+            />
+            {errors.name && <span className="field-error">{errors.name}</span>}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label>Username</label>
+            <input
+              value={form.username}
+              onChange={(e) => {
+                setForm({ ...form, username: e.target.value });
+                if (errors.username) setErrors({ ...errors, username: "" });
+              }}
+              className={errors.username ? "input-error-border" : ""}
+            />
+            {errors.username && <span className="field-error">{errors.username}</span>}
+          </div>
+        </div>
 
-        <label>Username</label>
-        <input
-          value={form.username}
-          onChange={(e) => {
-            setForm({ ...form, username: e.target.value });
-            if (errors.username) setErrors({ ...errors, username: "" });
-          }}
-          className={errors.username ? "input-error-border" : ""}
-        />
-        {errors.username && <span className="field-error">{errors.username}</span>}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label>Email</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => {
+                setForm({ ...form, email: e.target.value });
+                if (errors.email) setErrors({ ...errors, email: "" });
+              }}
+              className={errors.email ? "input-error-border" : ""}
+            />
+            {errors.email && <span className="field-error">{errors.email}</span>}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label>Employee ID</label>
+            <input
+              value={form.employeeId}
+              onChange={(e) => setForm({ ...form, employeeId: e.target.value })}
+            />
+          </div>
+        </div>
 
-        <label>Email</label>
-        <input
-          type="email"
-          value={form.email}
-          onChange={(e) => {
-            setForm({ ...form, email: e.target.value });
-            if (errors.email) setErrors({ ...errors, email: "" });
-          }}
-          className={errors.email ? "input-error-border" : ""}
-        />
-        {errors.email && <span className="field-error">{errors.email}</span>}
+        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+          <label>Role</label>
+          <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
+            {roleOptions.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
+          </select>
+        </div>
 
-        <label>Employee ID</label>
-        <input
-          value={form.employeeId}
-          onChange={(e) => setForm({ ...form, employeeId: e.target.value })}
-        />
-
-        <label>Role</label>
-        <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-          {roleOptions.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
-        </select>
-
-        <label>Password</label>
-        <input
-          type="password"
-          value={form.password}
-          onChange={(e) => {
-            setForm({ ...form, password: e.target.value });
-            if (errors.password) setErrors({ ...errors, password: "" });
-          }}
-          className={errors.password ? "input-error-border" : ""}
-        />
-        {errors.password && <span className="field-error">{errors.password}</span>}
-
-        <label>Confirm Password</label>
-        <input
-          type="password"
-          value={form.confirmPassword}
-          onChange={(e) => {
-            setForm({ ...form, confirmPassword: e.target.value });
-            if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: "" });
-          }}
-          className={errors.confirmPassword ? "input-error-border" : ""}
-        />
-        {errors.confirmPassword && <span className="field-error">{errors.confirmPassword}</span>}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label>Password</label>
+            <input
+              type="password"
+              value={form.password}
+              onChange={(e) => {
+                setForm({ ...form, password: e.target.value });
+                if (errors.password) setErrors({ ...errors, password: "" });
+              }}
+              className={errors.password ? "input-error-border" : ""}
+            />
+            {errors.password && <span className="field-error">{errors.password}</span>}
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            <label>Confirm Password</label>
+            <input
+              type="password"
+              value={form.confirmPassword}
+              onChange={(e) => {
+                setForm({ ...form, confirmPassword: e.target.value });
+                if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: "" });
+              }}
+              className={errors.confirmPassword ? "input-error-border" : ""}
+            />
+            {errors.confirmPassword && <span className="field-error">{errors.confirmPassword}</span>}
+          </div>
+        </div>
 
         {error && <p className="auth-error">{error}</p>}
         <button type="submit" disabled={loading}>{loading ? "Creating..." : "Create Account"}</button>
         <p className="auth-link">Already registered? <Link to="/login">Login</Link></p>
       </form>
-    </AuthClassicShell>
+    </AuthSplitShell>
   );
 }
 
@@ -249,7 +266,7 @@ function AuthSplitShell({ title, subtitle, children }) {
 
       {/* Right Pane: Vibrant Blue background containing the clean white login card */}
       <div className="auth-right-pane">
-        <div className="auth-card">
+        <div className="auth-card" style={{ maxWidth: title === "Register" ? "560px" : "440px" }}>
           <div className="auth-card-header">
             <h2 className="auth-card-title">
               {title === "Login" ? "Welcome Back!!" : title}

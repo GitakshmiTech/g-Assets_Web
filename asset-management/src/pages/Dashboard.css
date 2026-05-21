@@ -135,6 +135,20 @@
   align-items: center;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   transition: all 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card-new::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--color-primary), var(--color-secondary));
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
 }
 
 .kpi-card-new:hover {
