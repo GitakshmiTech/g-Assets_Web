@@ -145,6 +145,8 @@
   background: var(--bg-surface);
   transition: all var(--transition-fast);
   width: 100%;
+  box-sizing: border-box;
+  height: 42px;
 }
 
 .auth-form input:focus,
@@ -339,7 +341,8 @@
   box-shadow: 0 10px 15px -3px rgba(33, 133, 243, 0.25), 0 4px 6px -4px rgba(33, 133, 243, 0.25);
 }
 
-.auth-card .auth-form input:focus {
+.auth-card .auth-form input:focus,
+.auth-card .auth-form select:focus {
   border-color: #2185f3 !important;
   box-shadow: 0 0 0 3px rgba(33, 133, 243, 0.12) !important;
 }

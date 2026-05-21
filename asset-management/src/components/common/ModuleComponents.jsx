@@ -4,7 +4,7 @@ import "./ModuleComponents.css";
 export function PageTitle({ action }) {
   if (!action) return null;
   return (
-    <div className="module-title" style={{ justifyContent: "flex-end", minHeight: "auto", marginBottom: "16px", padding: 0 }}>
+    <div className="module-title" style={{ justifyContent: "flex-end", minHeight: "auto", marginBottom: "8px", padding: 0 }}>
       <div className="module-title-action">{action}</div>
     </div>
   );
@@ -23,10 +23,10 @@ export function KpiGrid({ items, action }) {
               flexDirection: "column", 
               alignItems: "flex-start", 
               justifyContent: "center", 
-              gap: "6px", 
-              height: "76px", 
-              minHeight: "76px",
-              maxHeight: "76px",
+              gap: "4px", 
+              height: "64px", 
+              minHeight: "64px",
+              maxHeight: "64px",
               width: "228px",
               boxSizing: "border-box"
             }}

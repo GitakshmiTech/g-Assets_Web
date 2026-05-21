@@ -227,7 +227,7 @@ export function Employees() {
       ]} />
       <DataTable
         columns={[
-          { key: "employee", label: "Employee" },
+          { key: "employee", label: "Employee", render: (row) => <span className="text-action" style={{ cursor: "default", textDecoration: "none" }}>{row.employee}</span> },
           { key: "department", label: "Department" },
           { key: "officeName", label: "Office" },
           { key: "assignedAssets", label: "Assets" },
