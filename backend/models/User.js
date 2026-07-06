@@ -10,6 +10,12 @@ export const USER_ROLES = [
   "EMPLOYEE",
 ];
 
+export const normalizeUserRole = (role = "") => {
+  const normalized = String(role || "EMPLOYEE").trim().toUpperCase().replace(/[\s-]+/g, "_");
+  if (normalized === "SUPERADMIN") return "SUPER_ADMIN";
+  return USER_ROLES.includes(normalized) ? normalized : "EMPLOYEE";
+};
+
 const userSchema = new mongoose.Schema(
   {
     name: {
@@ -62,6 +68,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    mfaSecret: {
+      type: String,
+      default: "",
+    },
+    mfaEnabled: {
+      type: Boolean,
+      default: false,
+    },
     status: {
       type: String,
       enum: ["ACTIVE", "INACTIVE"],
@@ -96,7 +110,7 @@ userSchema.methods.toSafeJSON = function toSafeJSON() {
     username: this.username,
     email: this.email,
     employeeId: this.employeeId,
-    role: this.role,
+    role: normalizeUserRole(this.role),
     status: this.status,
     department: this.department,
     phoneNumber: this.phoneNumber,

@@ -1,4 +1,5 @@
 import { useCallback, useRef, useState, useEffect } from "react";
+import { Save, RotateCcw } from "lucide-react";
 import ConfirmDeleteModal from "../../../components/common/ConfirmDeleteModal";
 
 function FormBuilderView({ builder }) {
@@ -43,6 +44,10 @@ function FormBuilderView({ builder }) {
     addCustomField,
     addFieldToSection,
     setEditingSection,
+    editingSectionGroup,
+    setEditingSectionGroup,
+    saveChanges,
+    resetDefaults,
   } = builder;
 
   const [activeTab, setActiveTab] = useState(sections[0]?.key || null);
@@ -162,7 +167,7 @@ function FormBuilderView({ builder }) {
           >
             <div className="master-section-heading">
               {editingSection === section.key ? (
-                <div className="section-edit-fields">
+                <div className="section-edit-fields" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   <input
                     className="section-name-input"
                     type="text"
@@ -177,6 +182,29 @@ function FormBuilderView({ builder }) {
                     onChange={(event) => setEditingSectionDescription(event.target.value)}
                     placeholder="Header description"
                   />
+                  <label style={{ display: "flex", alignItems: "center", gap: "8px", fontSize: "13px", color: "var(--text-muted)", marginTop: "4px" }}>
+                    <span>Associated Group:</span>
+                    <select
+                      className="section-group-select"
+                      value={editingSectionGroup || "All"}
+                      onChange={(event) => setEditingSectionGroup(event.target.value)}
+                      style={{
+                        padding: "4px 8px",
+                        borderRadius: "4px",
+                        border: "1px solid #cbd5e1",
+                        fontSize: "13px",
+                        outline: "none",
+                        backgroundColor: "#ffffff",
+                        color: "var(--text-main)"
+                      }}
+                    >
+                      <option value="All">Visible for All Groups</option>
+                      <option value="IT">Visible for IT Group</option>
+                      <option value="Building">Visible for Building Group</option>
+                      <option value="Furniture">Visible for Furniture Group</option>
+                      <option value="Vehicle">Visible for Vehicle Group</option>
+                    </select>
+                  </label>
                 </div>
               ) : (
                 <div className="section-title-block">
@@ -201,6 +229,7 @@ function FormBuilderView({ builder }) {
                       onClick={() => {
                         setEditingSection(null);
                         setEditingSectionDescription("");
+                        setEditingSectionGroup("All");
                       }}
                     >
                       Cancel
@@ -303,6 +332,18 @@ function FormBuilderView({ builder }) {
             </div>
           </section>
         ))}
+      </div>
+
+      {/* Bottom Sticky Action Bar */}
+      <div className="master-editor-footer-actions">
+        <button type="button" className="reset-master-btn" onClick={resetDefaults}>
+          <RotateCcw size={15} />
+          Reset Defaults
+        </button>
+        <button type="button" className="save-master-btn" onClick={saveChanges}>
+          <Save size={15} />
+          Save Changes
+        </button>
       </div>
 
       <ConfirmDeleteModal

@@ -7,11 +7,16 @@ const base64Url = (value) => Buffer.from(JSON.stringify(value)).toString("base64
 const sign = (payload) =>
   crypto.createHmac("sha256", getSecret()).update(payload).digest("base64url");
 
+const normalizeRole = (role = "") => {
+  const normalized = String(role || "EMPLOYEE").trim().toUpperCase().replace(/[\s-]+/g, "_");
+  return normalized === "SUPERADMIN" ? "SUPER_ADMIN" : normalized;
+};
+
 export const createToken = (user) => {
   const header = base64Url({ alg: "HS256", typ: "JWT" });
   const body = base64Url({
     sub: String(user._id),
-    role: user.role,
+    role: normalizeRole(user.role),
     email: user.email,
     exp: Math.floor(Date.now() / 1000) + 60 * 60 * 24,
   });

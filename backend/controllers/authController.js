@@ -1,6 +1,8 @@
 import User from "../models/User.js";
 import Role, { ensureDefaultRoles } from "../models/Role.js";
 import { createToken } from "../utils/authToken.js";
+import QRCode from "qrcode";
+import { generateBase32Secret, verifyTOTP } from "../utils/totp.js";
 
 const normalizeRole = async (role) => {
   await ensureDefaultRoles();
@@ -22,6 +24,53 @@ const findUserByEmailOrUsername = (identifier) => {
   }
 
   return User.findOne({ username: normalized });
+};
+
+const getAssetRedirectUri = (req) => {
+  const origin = String(req.get("x-client-origin") || req.get("origin") || "").trim().replace(/\/+$/, "");
+  if (origin) {
+    try {
+      const url = new URL(origin);
+      if (url.protocol === "http:" || url.protocol === "https:") {
+        return `${url.origin}/login`;
+      }
+    } catch {
+      // Fall back to configured redirect URI.
+    }
+  }
+
+  return process.env.GTONE_ASSET_REDIRECT_URI || process.env.ASSET_REDIRECT_URI || "http://localhost:5173/login";
+};
+
+const safeVerifyPassword = (user, password) => {
+  if (!user || !user.passwordHash || !user.passwordSalt) return false;
+
+  try {
+    return user.verifyPassword(password);
+  } catch (error) {
+    console.warn(`Password verification failed for ${user.email}:`, error.message);
+    return false;
+  }
+};
+
+const buildUsernameFromEmail = (email) => {
+  const localPart = String(email || "").split("@")[0] || "sso_user";
+  const normalized = normalizeUsername(localPart).replace(/[^a-z0-9_]/g, "_").slice(0, 24);
+  return USERNAME_PATTERN.test(normalized) ? normalized : `sso_${Date.now().toString(36)}`;
+};
+
+const ensureUniqueUsername = async (email) => {
+  const base = buildUsernameFromEmail(email);
+  let candidate = base;
+  let suffix = 1;
+
+  while (await User.exists({ username: candidate })) {
+    const tail = `_${suffix}`;
+    candidate = `${base.slice(0, 30 - tail.length)}${tail}`;
+    suffix += 1;
+  }
+
+  return candidate;
 };
 
 export const register = async (req, res) => {
@@ -83,14 +132,113 @@ export const login = async (req, res) => {
       return res.status(400).json({ success: false, message: "Email/username and password are required" });
     }
 
-    const user = await findUserByEmailOrUsername(email);
+    let user = await findUserByEmailOrUsername(email);
+    let passwordIsValid = safeVerifyPassword(user, password);
 
-    if (!user || !user.verifyPassword(password)) {
+    if (!passwordIsValid) {
+      // Try validating credentials with GT One SSO server as a fallback
+      try {
+        const ssoBaseUrl = String(process.env.GTONE_API_BASE_URL || "http://localhost:5004/api").replace(/\/+$/, "");
+        const assetRedirectUri = getAssetRedirectUri(req);
+        const response = await fetch(`${ssoBaseUrl}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: user?.email || email,
+            password,
+            app: "asset",
+            redirectUri: assetRedirectUri
+          })
+        });
+        if (response.ok) {
+          const ssoData = await response.json();
+          if (ssoData && (ssoData.success || ssoData.mfaRequired)) {
+            const ssoUser = ssoData.user || { email: user?.email || email };
+            if (!ssoUser.email) {
+              throw new Error("SSO response did not include a valid user email");
+            }
+            if (!user) {
+              let role = "EMPLOYEE";
+              const ssoRole = String(ssoUser.role || "EMPLOYEE").toUpperCase().replace(/[\s-]+/g, "_");
+              if (ssoRole === "SUPER_ADMIN" || ssoRole === "SUPERADMIN") {
+                role = "SUPER_ADMIN";
+              } else if (ssoRole === "ADMIN") {
+                role = "ADMIN";
+              } else if (ssoRole === "IT_STAFF") {
+                role = "IT_STAFF";
+              } else if (ssoRole === "MANAGER") {
+                role = "MANAGER";
+              } else if (ssoRole === "AUDITOR") {
+                role = "AUDITOR";
+              }
+
+              user = new User({
+                name: ssoUser.name || ssoUser.email.split("@")[0],
+                email: ssoUser.email.toLowerCase(),
+                username: await ensureUniqueUsername(ssoUser.email),
+                role,
+                status: "ACTIVE"
+              });
+            }
+            user.setPassword(password);
+            await user.save();
+            passwordIsValid = true;
+          }
+        } else {
+          const errText = await response.text();
+          console.warn(`SSO authentication fallback returned status ${response.status}: ${errText}`);
+        }
+      } catch (err) {
+        console.error("Failed to authenticate with GT One SSO during direct login:", err.message);
+      }
+    }
+
+    if (!passwordIsValid) {
       return res.status(401).json({ success: false, message: "Invalid email/username or password" });
     }
 
     if (user.status !== "ACTIVE") {
       return res.status(403).json({ success: false, message: "User is inactive" });
+    }
+
+    // Bypass MFA and directly issue token on successful credentials verification
+    const token = createToken(user);
+
+    return res.status(200).json({
+      success: true,
+      token,
+      user: user.toSafeJSON(),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const mfaVerify = async (req, res) => {
+  try {
+    const { userId, token } = req.body;
+
+    if (!userId || !token) {
+      return res.status(400).json({ success: false, message: "User ID and verification code are required" });
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    if (user.status !== "ACTIVE") {
+      return res.status(403).json({ success: false, message: "User is inactive" });
+    }
+
+    const verified = verifyTOTP(token, user.mfaSecret);
+    if (!verified) {
+      return res.status(401).json({ success: false, message: "Invalid verification code. Please try again." });
+    }
+
+    if (!user.mfaEnabled) {
+      user.mfaEnabled = true;
+      await user.save();
     }
 
     res.status(200).json({
@@ -152,5 +300,113 @@ export const updateProfile = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const ssoLogin = async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) {
+      return res.status(400).json({ success: false, message: "Authorization code is required" });
+    }
+
+    const ssoBaseUrl = String(process.env.GTONE_API_BASE_URL || "http://localhost:5004/api").replace(/\/+$/, "");
+    const assetRedirectUri = getAssetRedirectUri(req);
+    const ssoResponse = await fetch(`${ssoBaseUrl}/sso/exchange`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        app: "asset",
+        code,
+        redirectUri: assetRedirectUri
+      })
+    });
+
+    if (!ssoResponse.ok) {
+      const errText = await ssoResponse.text();
+      try {
+        const errJson = JSON.parse(errText);
+        return res.status(401).json({ success: false, message: errJson.message || "Invalid authorization code from SSO" });
+      } catch {
+        return res.status(401).json({ success: false, message: "Failed to exchange code: " + errText });
+      }
+    }
+
+    const ssoData = await ssoResponse.json();
+    if (!ssoData || !ssoData.success) {
+      return res.status(401).json({ success: false, message: "Invalid authorization code from SSO" });
+    }
+
+    const { user: ssoUser } = ssoData;
+    if (!ssoUser?.email) {
+      return res.status(401).json({ success: false, message: "SSO response did not include a valid user email" });
+    }
+
+    let user = await User.findOne({ email: ssoUser.email.toLowerCase() });
+
+    if (!user) {
+      let role = "EMPLOYEE";
+      const ssoRole = String(ssoUser.role || "EMPLOYEE").toUpperCase().replace(/[\s-]+/g, "_");
+      if (ssoRole === "SUPER_ADMIN" || ssoRole === "SUPERADMIN") {
+        role = "SUPER_ADMIN";
+      } else if (ssoRole === "ADMIN") {
+        role = "ADMIN";
+      } else if (ssoRole === "IT_STAFF") {
+        role = "IT_STAFF";
+      } else if (ssoRole === "MANAGER") {
+        role = "MANAGER";
+      } else if (ssoRole === "AUDITOR") {
+        role = "AUDITOR";
+      }
+
+      user = new User({
+        name: ssoUser.name || "SSO User",
+        email: ssoUser.email.toLowerCase(),
+        username: await ensureUniqueUsername(ssoUser.email),
+        role,
+        status: "ACTIVE"
+      });
+      user.setPassword(Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15));
+      await user.save();
+    }
+
+    if (user.status !== "ACTIVE") {
+      return res.status(403).json({ success: false, message: "User is inactive" });
+    }
+
+    res.status(200).json({
+      success: true,
+      token: createToken(user),
+      user: user.toSafeJSON(),
+    });
+  } catch (error) {
+    console.error("SSO Login Error:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Failed to authenticate with SSO server"
+    });
+  }
+};
+
+export const getSsoStatus = async (req, res) => {
+  try {
+    const ssoBaseUrl = String(process.env.GTONE_API_BASE_URL || "http://localhost:5004/api").replace(/\/+$/, "");
+    const ssoAuthorizeUrl = `${ssoBaseUrl}/sso/authorize?app=asset&response_mode=json`;
+
+    const response = await fetch(ssoAuthorizeUrl);
+    const status = response.status;
+    const data = await response.json();
+
+    if (status === 401 && data?.reason === "login_required") {
+      return res.status(200).json({ success: true, ssoEnabled: true });
+    }
+
+    console.log("[GTOne SSO] Asset status check failed on GTOne side:", status, data);
+    return res.status(200).json({ success: true, ssoEnabled: false });
+  } catch (apiErr) {
+    console.warn("[GTOne SSO] Failed to contact GTOne server for Asset status check:", apiErr.message);
+    return res.status(200).json({ success: true, ssoEnabled: false });
   }
 };

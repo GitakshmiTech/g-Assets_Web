@@ -13,7 +13,7 @@ import {
   seedWorkflowDemoData,
   updateAsset,
 } from "../controllers/assetController.js";
-import { currentUser, login, register, updateProfile } from "../controllers/authController.js";
+import { currentUser, login, register, updateProfile, ssoLogin, mfaVerify, getSsoStatus } from "../controllers/authController.js";
 import { createRole, deleteRole, listRoles, updateRole } from "../controllers/roleController.js";
 import {
   createPurchaseOrder,
@@ -28,6 +28,12 @@ import {
   createWorkOrder,
   updateWorkOrder,
 } from "../controllers/workOrderController.js";
+import {
+  assignTravelAssetsFromExpense,
+  getAvailableAssetsForTravel,
+  postDepreciationForAssets,
+} from "../controllers/integrationController.js";
+import { authenticateIntegration } from "../middlewares/integrationMiddleware.js";
 import { allowPermissions, authenticate } from "../middlewares/authMiddleware.js";
 import { PERMISSIONS } from "../utils/permissionCatalog.js";
 
@@ -39,11 +45,19 @@ router.put("/roles/:key", authenticate, allowPermissions(PERMISSIONS.USER_MANAGE
 router.delete("/roles/:key", authenticate, allowPermissions(PERMISSIONS.USER_MANAGE), deleteRole);
 router.post("/auth/register", register);
 router.post("/auth/login", login);
+router.post("/auth/sso-login", ssoLogin);
+router.get("/auth/sso/status", getSsoStatus);
+router.post("/auth/mfa-verify", mfaVerify);
 router.get("/auth/me", authenticate, currentUser);
 router.put("/auth/profile/update", authenticate, updateProfile);
 
 router.get("/scan/:id", getScanAsset);
 router.get("/qr/scan-base-url", authenticate, getQrScanBaseUrl);
+// Cross-product Asset <-> Expense integration routes
+router.get("/integrations/travel-assets", authenticate, allowPermissions(PERMISSIONS.ASSET_VIEW, PERMISSIONS.ASSET_ASSIGN), getAvailableAssetsForTravel);
+router.post("/integrations/depreciation/post", authenticate, allowPermissions(PERMISSIONS.SYSTEM_SETTINGS, PERMISSIONS.REPORT_EXPORT), postDepreciationForAssets);
+router.get("/integrations/expense/available-assets", authenticateIntegration, getAvailableAssetsForTravel);
+router.post("/integrations/expense/travel-assignments", authenticateIntegration, assignTravelAssetsFromExpense);
 
 router.get("/assets", authenticate, allowPermissions(PERMISSIONS.ASSET_VIEW, PERMISSIONS.REQUEST_VIEW), getAllAssets);
 router.get("/dashboard", authenticate, allowPermissions(PERMISSIONS.DASHBOARD_VIEW), getDashboard);

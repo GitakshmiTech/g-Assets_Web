@@ -394,3 +394,65 @@
   background: var(--bg-subtle);
   color: var(--color-primary);
 }
+
+/* QR Console Table Layout & Design Improvements */
+.qr-console-table-wrap .module-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.qr-console-table-wrap .module-table th,
+.qr-console-table-wrap .module-table td {
+  white-space: normal;
+  vertical-align: middle;
+  padding: 12px 16px;
+}
+
+/* Specific Column Proportions */
+.qr-console-table-wrap .module-table th:nth-child(1),
+.qr-console-table-wrap .module-table td:nth-child(1) {
+  width: 35%;
+}
+
+.qr-console-table-wrap .module-table th:nth-child(2),
+.qr-console-table-wrap .module-table td:nth-child(2) {
+  width: 20%;
+}
+
+.qr-console-table-wrap .module-table th:nth-child(3),
+.qr-console-table-wrap .module-table td:nth-child(3) {
+  width: 20%;
+}
+
+/* Align QR Code column beautifully to the center and fix width */
+.qr-console-table-wrap .module-table th:nth-child(4),
+.qr-console-table-wrap .module-table td:nth-child(4) {
+  width: 180px;
+  text-align: center;
+}
+
+.qr-console-table-wrap .qr-sticker-badge {
+  margin: 0 auto;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 6px;
+  background: #ffffff;
+  transition: all var(--transition-normal);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
+}
+
+.qr-console-table-wrap .qr-sticker-badge:hover {
+  transform: translateY(-2px) scale(1.06);
+  border-color: var(--color-primary);
+  box-shadow: 0 6px 18px rgba(33, 133, 243, 0.15);
+}
+
+.qr-console-table-wrap .qr-sticker-badge img {
+  width: 76px;
+  height: 76px;
+  display: block;
+}
+

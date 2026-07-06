@@ -1,23 +1,21 @@
 import PurchaseOrder from "../models/PurchaseOrder.js";
+import {
+  checkPurchaseOrderBudget,
+  integrationConfig,
+  postPurchaseOrderExpense,
+  syncVendorToExpense,
+} from "../services/expenseIntegrationService.js";
 
-// Helper to auto-generate PO Number starting from PO-45 to continue user's sample data seamlessly
 const generateNextPoNumber = async () => {
   const lastPo = await PurchaseOrder.findOne().sort({ createdAt: -1 });
-  if (!lastPo) {
-    return "PO-45";
-  }
+  if (!lastPo) return "PO-45";
   const match = lastPo.poNumber.match(/PO-(\d+)/);
-  if (match) {
-    const nextNum = parseInt(match[1], 10) + 1;
-    return `PO-${nextNum}`;
-  }
-  return "PO-45";
+  return match ? `PO-${parseInt(match[1], 10) + 1}` : "PO-45";
 };
 
-// Create a Purchase Order
 export const createPurchaseOrder = async (req, res) => {
   try {
-    const { vendor, shippingAddress, products, taxPercent = 18 } = req.body;
+    const { vendor, shippingAddress, products, taxPercent = 18, department = "Operations" } = req.body;
 
     if (!vendor || !vendor.orgName) {
       return res.status(400).json({ success: false, message: "Vendor organization name is required" });
@@ -29,7 +27,6 @@ export const createPurchaseOrder = async (req, res) => {
       return res.status(400).json({ success: false, message: "At least one product line item is required" });
     }
 
-    // Calculate totals on backend to guarantee accuracy
     let subTotal = 0;
     const validatedProducts = products.map((item) => {
       const quantity = Math.max(1, Number(item.requiredQuantity || 1));
@@ -40,8 +37,8 @@ export const createPurchaseOrder = async (req, res) => {
         productName: item.productName,
         requestId: item.requestId || "",
         requiredQuantity: quantity,
-        unitCost: unitCost,
-        cost: cost,
+        unitCost,
+        cost,
       };
     });
 
@@ -50,41 +47,58 @@ export const createPurchaseOrder = async (req, res) => {
     const poNumber = await generateNextPoNumber();
     const raisedBy = req.user?.name || req.user?.username || "Admin";
 
+    const budgetCheck = await checkPurchaseOrderBudget({
+      purchaseOrder: { poNumber, netTotal, department, purchaseOrderDate: new Date() },
+      department,
+    });
+
+    if (!budgetCheck.allowed && integrationConfig.blockOverBudget) {
+      return res.status(409).json({
+        success: false,
+        message: budgetCheck.message || "Purchase order exceeds remaining expense budget",
+        budgetCheck,
+      });
+    }
+
     const newPo = await PurchaseOrder.create({
       poNumber,
       raisedBy,
       vendor,
       shippingAddress,
       products: validatedProducts,
+      department,
+      budgetCheck,
       subTotal,
       tax,
       netTotal,
       status: "PO Raised",
     });
 
+    const vendorSync = await syncVendorToExpense(vendor, { poNumber, source: "purchase_order" });
+    newPo.expenseIntegration = { ...(newPo.expenseIntegration || {}), vendorSync };
+    await newPo.save();
+
     res.status(201).json({
       success: true,
       message: "Purchase Order raised successfully",
+      budgetCheck,
+      vendorSync,
       purchaseOrder: newPo,
     });
   } catch (error) {
-    res.status(500).json({
+    res.status(error.status || 500).json({
       success: false,
       message: error.message,
+      details: error.data || undefined,
     });
   }
 };
 
-// Get all Purchase Orders
 export const getAllPurchaseOrders = async (req, res) => {
   try {
     const { status, search } = req.query;
     const query = {};
-
-    if (status && status !== "ALL") {
-      query.status = status;
-    }
-
+    if (status && status !== "ALL") query.status = status;
     if (search) {
       const searchRegex = new RegExp(search, "i");
       query.$or = [
@@ -94,45 +108,23 @@ export const getAllPurchaseOrders = async (req, res) => {
         { "products.productName": searchRegex },
       ];
     }
-
     const purchaseOrders = await PurchaseOrder.find(query).sort({ createdAt: -1 });
-
-    res.status(200).json({
-      success: true,
-      count: purchaseOrders.length,
-      purchaseOrders,
-    });
+    res.status(200).json({ success: true, count: purchaseOrders.length, purchaseOrders });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Get single Purchase Order
 export const getPurchaseOrderById = async (req, res) => {
   try {
     const po = await PurchaseOrder.findById(req.params.id);
-    if (!po) {
-      return res.status(404).json({
-        success: false,
-        message: "Purchase Order not found",
-      });
-    }
-    res.status(200).json({
-      success: true,
-      purchaseOrder: po,
-    });
+    if (!po) return res.status(404).json({ success: false, message: "Purchase Order not found" });
+    res.status(200).json({ success: true, purchaseOrder: po });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// Update Purchase Order Status
 export const updatePurchaseOrderStatus = async (req, res) => {
   try {
     const { status } = req.body;
@@ -140,28 +132,23 @@ export const updatePurchaseOrderStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid status value" });
     }
 
-    const po = await PurchaseOrder.findByIdAndUpdate(
-      req.params.id,
-      { status },
-      { new: true }
-    );
+    const po = await PurchaseOrder.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    if (!po) return res.status(404).json({ success: false, message: "Purchase Order not found" });
 
-    if (!po) {
-      return res.status(404).json({
-        success: false,
-        message: "Purchase Order not found",
-      });
+    let expensePost = null;
+    if (["Received", "Partially Received"].includes(status)) {
+      expensePost = await postPurchaseOrderExpense(po);
+      po.expenseIntegration = { ...(po.expenseIntegration || {}), purchaseExpense: expensePost };
+      await po.save();
     }
 
     res.status(200).json({
       success: true,
       message: "Purchase Order status updated successfully",
+      expensePost,
       purchaseOrder: po,
     });
   } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: error.message,
-    });
+    res.status(error.status || 500).json({ success: false, message: error.message, details: error.data || undefined });
   }
 };

@@ -240,6 +240,12 @@
   padding: 16px 20px;
   display: flex;
   flex-direction: column;
+  scrollbar-width: none;
+}
+
+.main-panel::-webkit-scrollbar {
+  display: none;
+  width: 0;
 }
 
 .topbar {

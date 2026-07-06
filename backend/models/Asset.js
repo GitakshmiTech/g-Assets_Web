@@ -277,6 +277,15 @@ const assetSchema = new mongoose.Schema(
       default: {},
     },
 
+    travelAssignment: {
+      travelId: String,
+      travelRequestId: String,
+      expectedReturn: Date,
+      assignedFor: String,
+    },
+
+    depreciationPostings: [{ period: String, postedAt: Date, expenseId: String, amount: Number, status: String }],
+
     codeType: {
       type: String,
       enum: ["qr", "barcode"],

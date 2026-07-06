@@ -185,6 +185,8 @@ function Dashboard() {
             trendSub: `${stats.total.toLocaleString()} in inventory`,
             icon: <FaBoxOpen />,
             color: "#0EA5E9",
+            path: "/assets",
+            state: { statusFilter: "ALL" },
           },
           {
             label: "Available",
@@ -193,6 +195,8 @@ function Dashboard() {
             trendSub: `${percentOf(stats.available, stats.total)}% of total`,
             icon: <FaCheckCircle />,
             color: "#10B981",
+            path: "/assets",
+            state: { statusFilter: "AVAILABLE" },
           },
           {
             label: "Under Repair",
@@ -201,6 +205,8 @@ function Dashboard() {
             trendSub: `${percentOf(stats.repair, stats.total)}% of total`,
             icon: <FaWrench />,
             color: "#F59E0B",
+            path: "/assets",
+            state: { statusFilter: "UNDER_REPAIR" },
           },
           {
             label: "Warranty Alerts",
@@ -209,6 +215,8 @@ function Dashboard() {
             trendSub: stats.warranty ? "Expiring soon" : "No active alerts",
             icon: <FaShieldAlt />,
             color: "#EF4444",
+            path: "/warranty",
+            state: null,
           },
         ].map((kpi, idx) => (
           <motion.div
@@ -217,6 +225,8 @@ function Dashboard() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.05 }}
             className="kpi-card-new"
+            onClick={() => navigate(kpi.path, { state: kpi.state })}
+            whileHover={{ y: -2, scale: 1.01 }}
           >
             <div className="kpi-card-content">
               <span className="kpi-card-label">{kpi.label}</span>

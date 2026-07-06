@@ -137,6 +137,7 @@
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .kpi-card-new::before {

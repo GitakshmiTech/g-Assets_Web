@@ -48,7 +48,7 @@
 }
 
 .submit-btn {
-  background: #0ea5e9;
+  background: #0d9488;
   border: none;
   border-radius: 6px;
   padding: 8px 20px;
@@ -60,7 +60,7 @@
 }
 
 .submit-btn:hover {
-  background: #0284c7;
+  background: #0f766e;
 }
 
 .dynamic-form-section {

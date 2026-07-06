@@ -2,8 +2,12 @@ import * as yup from "yup";
 import { getAssetFormSections } from "../utils/assetFormBuilder";
 import { isNetworkAssetCategory } from "../utils/categoryCatalog";
 
-const isComputerAsset = (category, formConfig) =>
-  isNetworkAssetCategory(category, formConfig?.__categoryCatalog);
+const isComputerAsset = (category, subCategory, formConfig) =>
+  Boolean(
+    category &&
+      subCategory &&
+      isNetworkAssetCategory(category, formConfig?.__categoryCatalog),
+  );
 
 const getActiveSections = (config) =>
   getAssetFormSections(config).filter((section) =>
@@ -78,8 +82,8 @@ export const createAssetSchema = (formConfig = {}) => {
 
   model: stringField("model", "Model"),
 
-  ipAddress: yup.string().when("category", {
-    is: (cat) => isComputerAsset(cat, formConfig),
+  ipAddress: yup.string().when(["category", "subCategory"], {
+    is: (cat, subCat) => isComputerAsset(cat, subCat, formConfig),
     then: (schema) =>
       schema
         .required("IP Address is required for network assets")
@@ -87,8 +91,8 @@ export const createAssetSchema = (formConfig = {}) => {
     otherwise: (schema) => schema.notRequired(),
   }),
 
-  macAddress: yup.string().when("category", {
-    is: (cat) => isComputerAsset(cat, formConfig),
+  macAddress: yup.string().when(["category", "subCategory"], {
+    is: (cat, subCat) => isComputerAsset(cat, subCat, formConfig),
     then: (schema) =>
       schema
         .required("MAC Address is required for network assets")
@@ -191,7 +195,7 @@ export const createAssetSchema = (formConfig = {}) => {
   retirementDate: stringField("retirementDate", "Retirement Date"),
 
   assetDescription: yup.string().when("category", {
-    is: (cat) => !isComputerAsset(cat, formConfig),
+    is: (cat) => !isNetworkAssetCategory(cat, formConfig?.__categoryCatalog),
     then: (schema) => requiredWhenConfigured(formConfig, "assetDescription", labelFor("assetDescription", "Remarks")),
     otherwise: (schema) => schema.notRequired(),
   }),

@@ -28,6 +28,7 @@ export function useFormBuilder(formType) {
   const [editingSection, setEditingSection] = useState(null);
   const [editingSectionTitle, setEditingSectionTitle] = useState("");
   const [editingSectionDescription, setEditingSectionDescription] = useState("");
+  const [editingSectionGroup, setEditingSectionGroup] = useState("All");
   const [dragItem, setDragItem] = useState(null);
   const [sectionDeleteTarget, setSectionDeleteTarget] = useState(null);
 
@@ -182,6 +183,7 @@ export function useFormBuilder(formType) {
     setEditingSection(section.key);
     setEditingSectionTitle(section.title);
     setEditingSectionDescription(section.description || "");
+    setEditingSectionGroup(config.__sectionGroups?.[section.key] || section.group || "All");
   };
 
   const saveSectionName = (section) => {
@@ -192,13 +194,22 @@ export function useFormBuilder(formType) {
       ...current,
       __sectionLabels: { ...(current.__sectionLabels || {}), [section.key]: nextTitle },
       __sectionDescriptions: { ...(current.__sectionDescriptions || {}), [section.key]: nextDescription },
+      __sectionGroups: { ...(current.__sectionGroups || {}), [section.key]: editingSectionGroup },
       __customSections: (current.__customSections || []).map((item) =>
-        item.key === section.key ? { ...item, title: nextTitle, description: nextDescription } : item,
+        item.key === section.key
+          ? {
+              ...item,
+              title: nextTitle,
+              description: nextDescription,
+              group: editingSectionGroup,
+            }
+          : item,
       ),
     }));
     setEditingSection(null);
     setEditingSectionTitle("");
     setEditingSectionDescription("");
+    setEditingSectionGroup("All");
   };
 
   const deleteField = (field) => {
@@ -397,6 +408,8 @@ export function useFormBuilder(formType) {
     setEditingSectionTitle,
     editingSectionDescription,
     setEditingSectionDescription,
+    editingSectionGroup,
+    setEditingSectionGroup,
     dragItem,
     setDragItem,
     sectionDeleteTarget,

@@ -36,7 +36,7 @@ import VendorsPage from "../pages/setup/VendorsPage";
 import ProductsPage from "../pages/setup/ProductsPage";
 import PreferencesPage from "../pages/setup/PreferencesPage";
 import AddRequestPage from "../pages/AddRequestPage";
-import { canAccessRoute, getRoleHome } from "../utils/permissions";
+import { canAccessRoute, getRoleHome, normalizeRoleValue } from "../utils/permissions";
 import { fetchRoles } from "../utils/roleApi";
 
 function AppRouter() {
@@ -113,11 +113,15 @@ function RequireAuth() {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  const role = roles.find((item) => item.key === user.role);
+  // Clear sso_login_success flag as we are successfully authenticated on a protected route
+  sessionStorage.removeItem("sso_login_success");
+
+  const userRole = normalizeRoleValue(user.role);
+  const role = roles.find((item) => item.key === userRole);
   const roleAccess = role?.sidebarAccess?.length ? role.sidebarAccess : role?.access || "";
 
-  if (!canAccessRoute(user.role, location.pathname, roleAccess, role?.permissions || [])) {
-    return <Navigate to={getRoleHome(user.role, roleAccess)} replace />;
+  if (!canAccessRoute(userRole, location.pathname, roleAccess, role?.permissions || [])) {
+    return <Navigate to={getRoleHome(userRole, roleAccess)} replace />;
   }
 
   return <Outlet />;

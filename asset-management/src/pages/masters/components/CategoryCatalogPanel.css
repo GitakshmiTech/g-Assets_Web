@@ -1,0 +1,539 @@
+/* ============================================================
+   CATEGORY CATALOG PANEL — Premium Cohesive Design
+   Uses the app's teal primary color (#009688) throughout
+   ============================================================ */
+
+/* ── Panel shell ──────────────────────────────────────────── */
+.cc-panel {
+  background: #ffffff;
+  border-radius: 8px;
+  border: 1px solid #dbeafe;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  overflow: hidden;
+}
+
+/* ── Panel header ─────────────────────────────────────────── */
+.cc-panel-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 24px 18px;
+  border-bottom: 1px solid #dbeafe;
+  background: #f8fbff;
+}
+
+.cc-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-main, #1e293b);
+  margin: 0 0 4px;
+}
+
+.cc-panel-title-icon {
+  color: #0f766e;
+  flex-shrink: 0;
+}
+
+.cc-panel-subtitle {
+  font-size: 13px;
+  color: var(--text-muted, #64748b);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.cc-panel-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* ── Groups list ──────────────────────────────────────────── */
+.cc-groups-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 18px 24px;
+}
+
+/* ── Group section ────────────────────────────────────────── */
+.cc-group-section {
+  border: 1px solid #c7d2fe;
+  border-radius: 8px;
+  margin-bottom: 14px;
+  overflow: hidden;
+  background: #ffffff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.cc-group-section:hover {
+  box-shadow: 0 8px 20px rgba(14, 116, 144, 0.08);
+  border-color: #5eead4;
+}
+
+.cc-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: #f0fdfa;
+  border-bottom: 1px solid #ccfbf1;
+  cursor: default;
+}
+
+.cc-group-collapse-btn {
+  background: #ffffff;
+  border: 1px solid #99f6e4;
+  cursor: pointer;
+  padding: 3px;
+  color: #0f766e;
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+.cc-group-collapse-btn:hover { background: #ccfbf1; }
+
+.cc-group-folder-icon {
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.cc-group-name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #134e4a;
+  flex: 1;
+}
+
+.cc-group-count {
+  font-size: 11px;
+  font-weight: 600;
+  color: #1d4ed8;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.cc-group-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+}
+
+/* ── Group body ───────────────────────────────────────────── */
+.cc-group-body {
+  padding: 14px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #fbfdff;
+}
+
+.cc-flow-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid #dbeafe;
+  background: #ffffff;
+  color: #64748b;
+}
+
+.cc-flow-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.cc-flow-chip-group {
+  background: #e0f2fe;
+  color: #075985;
+}
+
+.cc-flow-chip-category {
+  background: #ccfbf1;
+  color: #0f766e;
+}
+
+.cc-flow-chip-sub {
+  background: #dcfce7;
+  color: #166534;
+}
+
+/* ── Empty group placeholder ──────────────────────────────── */
+.cc-empty-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 10px;
+  color: var(--text-muted, #94a3b8);
+  font-size: 13px;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+.cc-empty-icon { color: #cbd5e1; flex-shrink: 0; }
+.cc-text-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: none;
+  border: none;
+  color: #009688;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 4px;
+}
+.cc-text-btn:hover { text-decoration: underline; }
+
+/* ── Category row ─────────────────────────────────────────── */
+.cc-cat-row {
+  background: #ffffff;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  padding: 13px 14px 12px;
+  border-left: 4px solid #14b8a6;
+  transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
+}
+.cc-cat-row:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.06);
+  transform: translateY(-1px);
+}
+
+.cc-cat-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.cc-cat-name-wrap {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1;
+  min-width: 0;
+}
+
+.cc-cat-icon {
+  color: #2563eb;
+  flex-shrink: 0;
+}
+
+.cc-cat-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main, #1e293b);
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cc-placeholder {
+  color: var(--text-muted, #94a3b8);
+  font-style: italic;
+  font-weight: 400;
+}
+
+.cc-cat-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+/* ── Group select (on category row) ──────────────────────── */
+.cc-group-select {
+  height: 30px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-main, #334155);
+  background: #fff;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.cc-group-select:focus { border-color: #009688; box-shadow: 0 0 0 2px rgba(0,150,136,0.12); }
+
+/* ── Sub-category area ────────────────────────────────────── */
+.cc-sub-area {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+/* ── Sub-category tag ─────────────────────────────────────── */
+.cc-sub-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  border-radius: 6px;
+  padding: 3px 8px 3px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #166534;
+  line-height: 1;
+  transition: background 0.15s;
+}
+.cc-sub-tag:hover { background: #dcfce7; }
+
+.cc-sub-tag-text {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cc-sub-tag-edit,
+.cc-sub-tag-del {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 1px;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 3px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.15s, background 0.15s;
+}
+.cc-sub-tag-edit:hover { opacity: 1; background: rgba(0,0,0,0.08); color: #1565c0; }
+.cc-sub-tag-del:hover { opacity: 1; background: rgba(0,0,0,0.08); color: #c62828; }
+
+/* ── Add sub-category button ──────────────────────────────── */
+.cc-add-sub-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #f8fafc;
+  border: 1.5px dashed #67e8f9;
+  border-radius: 6px;
+  color: #0e7490;
+  cursor: pointer;
+  font-size: 11.5px;
+  font-weight: 600;
+  padding: 3px 9px;
+  transition: all 0.15s;
+}
+.cc-add-sub-btn:hover { background: #ecfeff; border-color: #0891b2; }
+
+.cc-add-category-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 38px;
+  border-radius: 8px;
+  border: 1.5px dashed #38bdf8;
+  background: #f0f9ff;
+  color: #0369a1;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.cc-add-category-inline:hover {
+  background: #e0f2fe;
+  border-color: #0284c7;
+  color: #075985;
+}
+
+/* ── Inline edit ──────────────────────────────────────────── */
+.cc-inline-edit {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cc-inline-input {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 13px;
+  border: 1.5px solid #009688;
+  border-radius: 6px;
+  outline: none;
+  background: #fff;
+  color: var(--text-main, #1e293b);
+  min-width: 160px;
+  box-shadow: 0 0 0 3px rgba(0,150,136,0.1);
+}
+.cc-inline-input-sm { min-width: 120px; }
+
+/* ── Icon buttons ─────────────────────────────────────────── */
+.cc-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+
+.cc-icon-btn-primary {
+  background: #009688;
+  color: #fff;
+  border-color: #009688;
+}
+.cc-icon-btn-primary:hover { background: #00796b; border-color: #00796b; }
+
+.cc-icon-btn-save {
+  background: #ecfdf5;
+  color: #047857;
+  border-color: #a7f3d0;
+}
+.cc-icon-btn-save:hover {
+  background: #d1fae5;
+  border-color: #34d399;
+}
+
+.cc-icon-btn-edit {
+  background: #fff8e1;
+  color: #b45309;
+  border-color: #fde68a;
+}
+.cc-icon-btn-edit:hover { background: #fef3c7; border-color: #f59e0b; }
+
+.cc-icon-btn-del {
+  background: #fef2f2;
+  color: #dc2626;
+  border-color: #fecaca;
+}
+.cc-icon-btn-del:hover { background: #fee2e2; border-color: #f87171; }
+
+/* ── Confirm/Cancel buttons ───────────────────────────────── */
+.cc-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+.cc-btn-confirm { background: #009688; color: #fff; }
+.cc-btn-confirm:hover { background: #00796b; }
+.cc-btn-cancel { background: #f1f5f9; color: #64748b; border: 1px solid #e2e8f0; }
+.cc-btn-cancel:hover { background: #e2e8f0; }
+
+/* ── Primary / ghost buttons ──────────────────────────────── */
+.cc-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: none;
+  background: #009688;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  box-shadow: 0 1px 3px rgba(0,150,136,0.25);
+}
+.cc-btn-primary:hover { background: #00796b; }
+
+.cc-btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: #fff;
+  color: var(--text-muted, #64748b);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cc-btn-ghost:hover { background: #f1f5f9; border-color: #cbd5e1; color: var(--text-main, #1e293b); }
+
+/* ── Outline primary button ───────────────────────────────── */
+.cc-btn-outline-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  border: 1.5px dashed #009688;
+  background: #f0faf9;
+  color: #009688;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.cc-btn-outline-primary:hover { background: #e0f2f1; border-style: solid; }
+
+/* ── Add group area ───────────────────────────────────────── */
+.cc-add-group-wrapper {
+  padding: 4px 0 8px;
+}
+
+.cc-add-group-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #f8fafc;
+  border: 1px dashed #009688;
+  border-radius: 10px;
+}
+
+.cc-add-group-btn {
+  margin: 0;
+}
+
+/* ── Footer bar ───────────────────────────────────────────── */
+.cc-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-subtle, #f8fafc);
+}

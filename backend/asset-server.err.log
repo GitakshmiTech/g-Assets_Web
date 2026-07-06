@@ -1,0 +1,219 @@
+(node:8640) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:13856) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:29632) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:1396) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21052) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:8256) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:34028) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/controllers/authController.js:194
+import User from "../models/User.js";
+       ^^^^
+
+SyntaxError: Unexpected identifier 'User'
+    at compileSourceTextModule (node:internal/modules/esm/utils:318:16)
+    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:90:18)
+    at #translate (node:internal/modules/esm/loader:435:20)
+    at afterLoad (node:internal/modules/esm/loader:491:29)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:496:12)
+    at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:549:36)
+    at afterResolve (node:internal/modules/esm/loader:597:52)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:603:12)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:163:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:253:17)
+
+Node.js v24.16.0
+(node:9152) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/routes/assetRoutes.js:16
+import { currentUser, login, register, updateProfile, ssoLogin, mfaVerify } from "../controllers/authController.js";
+                                                                ^^^^^^^^^
+SyntaxError: The requested module '../controllers/authController.js' does not provide an export named 'mfaVerify'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:327:21)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:431:5)
+    at async node:internal/modules/esm/loader:633:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.16.0
+(node:45248) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/routes/assetRoutes.js:16
+import { currentUser, login, register, updateProfile, ssoLogin, mfaVerify } from "../controllers/authController.js";
+         ^^^^^^^^^^^
+SyntaxError: The requested module '../controllers/authController.js' does not provide an export named 'currentUser'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:327:21)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:431:5)
+    at async node:internal/modules/esm/loader:633:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.16.0
+(node:23192) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:19392) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/controllers/authController.js:74
+    if (!userId || !token) {
+        ^
+
+SyntaxError: Unexpected token '!'
+    at compileSourceTextModule (node:internal/modules/esm/utils:318:16)
+    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:90:18)
+    at #translate (node:internal/modules/esm/loader:435:20)
+    at afterLoad (node:internal/modules/esm/loader:491:29)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:496:12)
+    at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:549:36)
+    at afterResolve (node:internal/modules/esm/loader:597:52)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:603:12)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:163:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:253:17)
+
+Node.js v24.16.0
+(node:34228) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/routes/assetRoutes.js:16
+import { currentUser, login, register, updateProfile, ssoLogin, mfaVerify } from "../controllers/authController.js";
+                                                                ^^^^^^^^^
+SyntaxError: The requested module '../controllers/authController.js' does not provide an export named 'mfaVerify'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:327:21)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:431:5)
+    at async node:internal/modules/esm/loader:633:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.16.0
+(node:33072) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/routes/assetRoutes.js:16
+import { currentUser, login, register, updateProfile, ssoLogin, mfaVerify } from "../controllers/authController.js";
+                                                                ^^^^^^^^^
+SyntaxError: The requested module '../controllers/authController.js' does not provide an export named 'mfaVerify'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:327:21)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:431:5)
+    at async node:internal/modules/esm/loader:633:26
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v24.16.0
+(node:21180) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:49100) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:18160) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Failed to authenticate with GT One SSO during direct login: fetch failed
+(node:16896) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:34728) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:14112) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21680) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/routes/assetRoutes.js:10
+import express from "express";
+^^^^^^
+
+SyntaxError: Unexpected reserved word
+    at compileSourceTextModule (node:internal/modules/esm/utils:318:16)
+    at ModuleLoader.moduleStrategy (node:internal/modules/esm/translators:90:18)
+    at #translate (node:internal/modules/esm/loader:435:20)
+    at afterLoad (node:internal/modules/esm/loader:491:29)
+    at ModuleLoader.loadAndTranslate (node:internal/modules/esm/loader:496:12)
+    at #getOrCreateModuleJobAfterResolve (node:internal/modules/esm/loader:549:36)
+    at afterResolve (node:internal/modules/esm/loader:597:52)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:603:12)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:163:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:253:17)
+
+Node.js v24.16.0
+(node:55388) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:42016) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:560) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:17128) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Database connection failed: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017
+(node:58228) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:52232) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Database connection failed: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017
+(node:54080) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15036) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61424) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+Database connection failed: connect ECONNREFUSED ::1:27017, connect ECONNREFUSED 127.0.0.1:27017
+(node:18424) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/ASUS/Desktop/bruno/Asset-Management-System/backend/index.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to \\?\C:\Users\ASUS\Desktop\bruno\Asset-Management-System\backend\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)

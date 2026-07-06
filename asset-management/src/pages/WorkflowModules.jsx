@@ -36,6 +36,11 @@ const assetColumns = [
   { key: "assetCode", label: "Code" },
   { key: "assetStatus", label: "Status" },
   { key: "assignedTo", label: "Assigned To" },
+  {
+    key: "travelAssignment",
+    label: "Assignment Source",
+    render: (row) => row.travelAssignment?.travelId ? `Travel ${row.travelAssignment.travelId}` : "-",
+  },
   { key: "officeName", label: "Office" },
   { key: "department", label: "Department" },
 ];
@@ -1051,23 +1056,25 @@ export function ScanDemo() {
         </div>
       </div>
       
-      <DataTable
-        columns={[
-          { key: "assetName", label: "Asset", render: (row) => <AssetLink asset={row} /> },
-          { key: "assetCode", label: "Code" },
-          { key: "serialNumber", label: "Serial" },
-          {
-            key: "qrCode",
-            label: "QR Code",
-            render: (row) => row.qrCode ? (
-              <div className="qr-sticker-badge">
-                <img src={row.qrCode} alt="QR" />
-              </div>
-            ) : "-"
-          }
-        ]}
-        rows={filteredAssets}
-      />
+      <div className="qr-console-table-wrap">
+        <DataTable
+          columns={[
+            { key: "assetName", label: "Asset", render: (row) => <AssetLink asset={row} /> },
+            { key: "assetCode", label: "Code" },
+            { key: "serialNumber", label: "Serial" },
+            {
+              key: "qrCode",
+              label: "QR Code",
+              render: (row) => row.qrCode ? (
+                <div className="qr-sticker-badge">
+                  <img src={row.qrCode} alt="QR" />
+                </div>
+              ) : "-"
+            }
+          ]}
+          rows={filteredAssets}
+        />
+      </div>
     </>
   );
 }

@@ -25,6 +25,13 @@ export const ROLE_HOME = {
   EMPLOYEE: "/employees",
 };
 
+export const normalizeRoleValue = (role = "") => {
+  const normalized = String(role || "EMPLOYEE").trim().toUpperCase().replace(/[\s-]+/g, "_");
+  if (normalized === "SUPERADMIN") return "SUPER_ADMIN";
+  if (ROLE_LABELS[normalized]) return normalized;
+  return "EMPLOYEE";
+};
+
 export const PERMISSION_OPTIONS = [
   { value: "dashboard.view", label: "Dashboard View", group: "Dashboard" },
   { value: "asset.view", label: "Asset View", group: "Assets" },

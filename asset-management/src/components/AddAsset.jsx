@@ -21,7 +21,7 @@ import {
 } from "../utils/assetFormBuilder";
 import "./AddAsset.css";
 
-import { isNetworkAssetCategory, getSubcategoriesForCategory } from "../utils/categoryCatalog";
+import { isNetworkAssetCategory, getSubcategoriesForCategory, getCategoryGroup, getAvailableGroups, getCategoriesForGroup } from "../utils/categoryCatalog";
 
 const generateReqId = () => `REQ-${Date.now()}`;
 
@@ -61,6 +61,8 @@ function AddAsset() {
   const [barcodeUrl, setBarcodeUrl] = useState("");
   const [barcodeError, setBarcodeError] = useState("");
   const [isSavingCodeType, setIsSavingCodeType] = useState(false);
+  // Group state for Group → Category → SubCategory flow
+  const [selectedGroup, setSelectedGroup] = useState("");
 
   const formatDate = (value) => value?.split("T")[0] || "";
 
@@ -125,6 +127,7 @@ function AddAsset() {
     reset,
     control,
     setError,
+    setValue,
     formState: { errors },
   } = useForm({
     mode: "all",
@@ -146,21 +149,42 @@ function AddAsset() {
 
   const deviceOwnedBy = useWatch({ control, name: "deviceOwnedBy" });
   const category = useWatch({ control, name: "category" });
-  const showComputerFields = isNetworkAssetCategory(category, formConfig?.__categoryCatalog);
+  const subCategory = useWatch({ control, name: "subCategory" });
+
+  // Derive the effective group: either from selectedGroup state (for new assets)
+  // or from the catalog based on the current category value (for edit mode)
+  const effectiveGroup = useMemo(() => {
+    if (selectedGroup) return selectedGroup;
+    if (category) return getCategoryGroup(category, formConfig?.__categoryCatalog);
+    return "";
+  }, [selectedGroup, category, formConfig]);
+
+  // Show network/computer sections only after the full Group -> Category -> Sub Category flow is selected.
+  const showComputerFields = Boolean(
+    category &&
+      subCategory &&
+      isNetworkAssetCategory(category, formConfig?.__categoryCatalog),
+  );
+
   const formSections = useMemo(() => {
     if (isRequestMode) {
       return getRequestFormSections(formConfig);
     }
 
+    const categoryGroup = effectiveGroup || getCategoryGroup(category, formConfig?.__categoryCatalog);
+
     return getAssetFormSections(formConfig).filter((section) => {
       if (section.key === "Asset Information") return true;
-      if (showComputerFields) {
-        return ["IP Configuration", "Computer Specifications"].includes(section.key);
-      } else {
-        return section.key === "Remarks";
+      if (["IP Configuration", "Computer Specifications"].includes(section.key)) {
+        return showComputerFields;
       }
+
+      const sectionGroup = formConfig?.__sectionGroups?.[section.key] || section.group || "All";
+      if (sectionGroup === "All") return true;
+
+      return sectionGroup === categoryGroup;
     });
-  }, [isRequestMode, formConfig, showComputerFields]);
+  }, [isRequestMode, formConfig, category, effectiveGroup, showComputerFields]);
 
   const renderedFieldNames = useMemo(() => {
     return new Set(formSections.flatMap((section) => section.fields.map((f) => f.name)));
@@ -202,8 +226,28 @@ function AddAsset() {
 
   useEffect(() => {
     if (id && singleAssetData) {
+      let customFieldData = {};
+      if (singleAssetData.customFields) {
+        Object.keys(singleAssetData.customFields).forEach((key) => {
+          const fieldLabel = key.split(".")[1];
+          if (fieldLabel) {
+            const matchedField = getAssetFormSections(formConfig)
+              .flatMap((s) => s.fields)
+              .find((f) => f.label === fieldLabel);
+            if (matchedField) {
+              customFieldData[matchedField.name] = singleAssetData.customFields[key];
+            }
+          }
+        });
+      }
+      // Restore selectedGroup from existing asset's category group
+      if (singleAssetData.category) {
+        const grp = getCategoryGroup(singleAssetData.category, formConfig?.__categoryCatalog);
+        if (grp) setSelectedGroup(grp);
+      }
       reset({
         ...singleAssetData,
+        ...customFieldData,
         purchaseDate: formatDate(singleAssetData.purchaseDate),
         warrantyStart: formatDate(singleAssetData.warrantyStart),
         warrantyEnd: formatDate(singleAssetData.warrantyEnd),
@@ -213,7 +257,7 @@ function AddAsset() {
         retirementDate: formatDate(singleAssetData.retirementDate),
       });
     }
-  }, [singleAssetData, reset, id]);
+  }, [singleAssetData, reset, id, formConfig]);
 
   const onSubmit = async (data) => {
     const missingField = Object.entries(formConfig).find(
@@ -266,7 +310,14 @@ function AddAsset() {
       payload.recordType = "ASSET";
     }
 
-    if (!isRequestMode && !isNetworkAssetCategory(payload.category, formConfig?.__categoryCatalog)) {
+    if (
+      !isRequestMode &&
+      !(
+        payload.category &&
+        payload.subCategory &&
+        isNetworkAssetCategory(payload.category, formConfig?.__categoryCatalog)
+      )
+    ) {
       [
         "ipAddress",
         "macAddress",
@@ -317,6 +368,7 @@ function AddAsset() {
         message: `${payload.assetName || "Record"} created successfully.`,
       });
       reset();
+      setSelectedGroup("");
     } catch (error) {
       showToast({
         title: isEditMode ? "Update failed" : "Submit failed",
@@ -428,60 +480,150 @@ function AddAsset() {
 
     if (field.name === "category") {
       const catalog = formConfig?.__categoryCatalog || { categories: [] };
-      const categories = catalog.categories || [];
+      const availableGroups = getAvailableGroups(catalog);
+      const categoryInput = register("category");
+
+      // Group-filtered categories
+      const filteredCategories = selectedGroup
+        ? getCategoriesForGroup(selectedGroup, catalog)
+        : catalog.categories || [];
+
+      // Group color badges
+      const groupColors = {
+        IT: { bg: "#eff6ff", border: "#bfdbfe", text: "#1d4ed8" },
+        Building: { bg: "#f0fdf4", border: "#bbf7d0", text: "#15803d" },
+        Furniture: { bg: "#fffbeb", border: "#fde68a", text: "#b45309" },
+        Vehicle: { bg: "#fdf4ff", border: "#e9d5ff", text: "#7e22ce" },
+        General: { bg: "#f8fafc", border: "#e2e8f0", text: "#475569" },
+      };
+
       return (
-        <div className="input-wrapper" key={field.name}>
-          <label className="input-label">
-            {fieldLabelMap.category || "Category"}
-            {checkMandatory("category") && <span className="required">*</span>}
-          </label>
-          <select
-            {...register("category")}
-            className={`custom-input ${errors.category ? "input-error-border" : ""}`}
-          >
-            <option value="">Select Category</option>
-            {categories.map((cat) => (
-              <option value={cat.name} key={cat.id || cat.name}>
-                {cat.name}
-              </option>
-            ))}
-          </select>
-          {errors.category && <span className="field-error">{errors.category.message}</span>}
+        <div key={field.name} style={{ gridColumn: "span 2" }}>
+          {/* Row: Group + Category + SubCategory side by side */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px" }}>
+            {/* 1. Group Dropdown */}
+            <div className="input-wrapper">
+              <label className="input-label">
+                Group
+                <span className="required">*</span>
+              </label>
+              <select
+                value={selectedGroup}
+                onChange={(e) => {
+                  setSelectedGroup(e.target.value);
+                  // Reset category and subCategory when group changes
+                  setValue("category", "");
+                  setValue("subCategory", "");
+                }}
+                className="custom-input"
+                style={{
+                  borderLeft: selectedGroup && groupColors[selectedGroup]
+                    ? `3px solid ${groupColors[selectedGroup]?.border}`
+                    : undefined
+                }}
+              >
+                <option value="">Select Group</option>
+                {availableGroups.map((grp) => {
+                  const color = groupColors[grp];
+                  return (
+                    <option value={grp} key={grp}>
+                      {grp}
+                    </option>
+                  );
+                })}
+              </select>
+              {selectedGroup && groupColors[selectedGroup] && (
+                <span style={{
+                  display: "inline-block",
+                  marginTop: "4px",
+                  padding: "2px 8px",
+                  borderRadius: "4px",
+                  fontSize: "11px",
+                  fontWeight: "600",
+                  background: groupColors[selectedGroup].bg,
+                  border: `1px solid ${groupColors[selectedGroup].border}`,
+                  color: groupColors[selectedGroup].text
+                }}>
+                  {selectedGroup} Group
+                </span>
+              )}
+            </div>
+
+            {/* 2. Category Dropdown (filtered by group) */}
+            <div className="input-wrapper">
+              <label className="input-label">
+                {fieldLabelMap.category || "Category"}
+                {checkMandatory("category") && <span className="required">*</span>}
+              </label>
+              <select
+                {...categoryInput}
+                onChange={(e) => {
+                  categoryInput.onChange(e);
+                  setValue("subCategory", "");
+                }}
+                disabled={!selectedGroup}
+                className={`custom-input ${errors.category ? "input-error-border" : ""}`}
+                style={{ opacity: !selectedGroup ? 0.55 : 1 }}
+              >
+                <option value="">
+                  {selectedGroup ? "Select Category" : "Select a Group first"}
+                </option>
+                {filteredCategories.map((cat) => (
+                  <option value={cat.name} key={cat.id || cat.name}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+              {errors.category && <span className="field-error">{errors.category.message}</span>}
+            </div>
+
+            {/* 3. SubCategory Dropdown (filtered by category) */}
+            {(() => {
+              const subcategories = getSubcategoriesForCategory(category, formConfig?.__categoryCatalog);
+              return (
+                <div className="input-wrapper">
+                  <label className="input-label">
+                    {fieldLabelMap.subCategory || "Sub Category"}
+                    {checkMandatory("subCategory") && <span className="required">*</span>}
+                  </label>
+                  {subcategories.length > 0 ? (
+                    <select
+                      {...register("subCategory")}
+                      disabled={!category}
+                      className={`custom-input ${errors.subCategory ? "input-error-border" : ""}`}
+                      style={{ opacity: !category ? 0.55 : 1 }}
+                    >
+                      <option value="">
+                        {category ? "Select Sub Category" : "Select Category first"}
+                      </option>
+                      {subcategories.map((sub) => (
+                        <option value={sub} key={sub}>
+                          {sub}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder={category ? "Enter Sub Category" : "Select Category first"}
+                      disabled={!category}
+                      {...register("subCategory")}
+                      className={`custom-input ${errors.subCategory ? "input-error-border" : ""}`}
+                      style={{ opacity: !category ? 0.55 : 1 }}
+                    />
+                  )}
+                  {errors.subCategory && <span className="field-error">{errors.subCategory.message}</span>}
+                </div>
+              );
+            })()}
+          </div>
         </div>
       );
     }
 
+    // Skip subCategory here — it's rendered together with category above
     if (field.name === "subCategory") {
-      const subcategories = getSubcategoriesForCategory(category, formConfig?.__categoryCatalog);
-      return (
-        <div className="input-wrapper" key={field.name}>
-          <label className="input-label">
-            {fieldLabelMap.subCategory || "Sub Category"}
-            {checkMandatory("subCategory") && <span className="required">*</span>}
-          </label>
-          {subcategories.length > 0 ? (
-            <select
-              {...register("subCategory")}
-              className={`custom-input ${errors.subCategory ? "input-error-border" : ""}`}
-            >
-              <option value="">Select Sub Category</option>
-              {subcategories.map((sub) => (
-                <option value={sub} key={sub}>
-                  {sub}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <input
-              type="text"
-              placeholder="Enter Sub Category"
-              {...register("subCategory")}
-              className={`custom-input ${errors.subCategory ? "input-error-border" : ""}`}
-            />
-          )}
-          {errors.subCategory && <span className="field-error">{errors.subCategory.message}</span>}
-        </div>
-      );
+      return null;
     }
 
     if (requestSelectFields.has(field.name)) {

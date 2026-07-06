@@ -18,6 +18,7 @@ export const assetFormSections = [
   {
     title: "Asset Information",
     description: "Capture asset identity, QR, and status details.",
+    group: "All",
     fields: [
       { name: "assetName", label: "Asset Name", required: true, locked: true },
       { name: "category", label: "Category", required: true, locked: true },
@@ -35,6 +36,7 @@ export const assetFormSections = [
     title: "IP Configuration",
     description:
       "Visible for categories marked “Network / computer” in Master Editor → Category catalog (e.g. Laptop, PC).",
+    group: "IT",
     fields: [
       { name: "ipAddress", label: "IP Address" },
       { name: "macAddress", label: "MAC Address" },
@@ -47,6 +49,7 @@ export const assetFormSections = [
   {
     title: "Computer Specifications",
     description: "Hardware and software details when the category is marked as network / computer in the catalog.",
+    group: "IT",
     fields: [
       { name: "operatingSystem", label: "Operating System" },
       { name: "processor", label: "Processor" },
@@ -59,6 +62,7 @@ export const assetFormSections = [
   {
     title: "Purchase & Invoice",
     description: "Recorded purchase details for inventory assets.",
+    group: "All",
     fields: [
       { name: "purchaseDate", label: "Purchase Date" },
       { name: "vendor", label: "Vendor" },
@@ -69,6 +73,7 @@ export const assetFormSections = [
   {
     title: "Warranty, Office & Assignment",
     description: "Manage reminders, branch placement, and employee assignment.",
+    group: "All",
     fields: [
       { name: "warrantyPeriod", label: "Warranty Period (Months)" },
       { name: "warrantyStart", label: "Warranty Start" },
@@ -93,6 +98,7 @@ export const assetFormSections = [
   {
     title: "Remarks",
     description: "Additional notes or remarks for this asset.",
+    group: "All",
     fields: [
       { name: "assetDescription", label: "Remarks" },
     ],
@@ -203,6 +209,7 @@ const buildFormSections = (formType, config = {}) => {
   const labels = config.__fieldLabels || {};
   const sectionLabels = config.__sectionLabels || {};
   const sectionDescriptions = config.__sectionDescriptions || {};
+  const sectionGroups = config.__sectionGroups || {};
   const customSections = config.__customSections || [];
   const deletedFields = new Set(config.__deletedFields || []);
   const fieldSections = config.__fieldSections || {};
@@ -213,6 +220,7 @@ const buildFormSections = (formType, config = {}) => {
     ...section,
     title: sectionLabels[section.title] || section.title,
     description: sectionDescriptions[section.title] || section.description,
+    group: sectionGroups[section.title] || section.group || "All",
     fields: [],
   }));
 
@@ -228,6 +236,7 @@ const buildFormSections = (formType, config = {}) => {
         key: sectionKey,
         title: sectionLabels[sectionKey] || section.title,
         description: sectionDescriptions[sectionKey] || section.description || "",
+        group: sectionGroups[sectionKey] || section.group || "All",
         fields: [],
       };
     }
@@ -324,6 +333,8 @@ const loadConfigForType = (formType) => {
     config.__fieldLabels = saved.__fieldLabels || {};
     config.__sectionLabels = saved.__sectionLabels || {};
     config.__sectionDescriptions = saved.__sectionDescriptions || {};
+    config.__sectionGroups = saved.__sectionGroups || {};
+    config.__hiddenSections = Array.isArray(saved.__hiddenSections) ? saved.__hiddenSections : [];
     config.__customSections = Array.isArray(saved.__customSections) ? saved.__customSections : [];
     config.__deletedFields = Array.isArray(saved.__deletedFields) ? saved.__deletedFields : [];
     config.__sectionOrder = Array.isArray(saved.__sectionOrder) ? saved.__sectionOrder : [];

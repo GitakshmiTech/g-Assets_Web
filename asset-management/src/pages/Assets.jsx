@@ -5,7 +5,7 @@ import { addAsset, fetchAssetList, deleteAsset } from "../store/slices/assetSlic
 import "./Assets.css";
 import { useEffect, useRef, useState } from "react";
 import moment from "moment";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FaDownload, FaEdit, FaEye, FaFileCsv, FaFileImport, FaTags, FaTimes, FaTrash, FaCheckCircle, FaUserCheck, FaWrench, FaShieldAlt } from "react-icons/fa";
 import deleteModelImage from "../images/deleteModalImage.svg";
 import logoImage from "../images/logo.jpeg";
@@ -205,6 +205,7 @@ function Assets() {
   const dispatch = useDispatch();
 
   const navigate = useNavigate();
+  const location = useLocation();
   const { showToast } = useToast();
   const fileInputRef = useRef(null);
   const [openModal, setOpenModal] = useState(false);
@@ -213,7 +214,7 @@ function Assets() {
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [deleteModal, setDeleteModal] = useState(false);
   const [stickerModal, setStickerModal] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] = useState(location.state?.statusFilter || "ALL");
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
@@ -230,6 +231,12 @@ function Assets() {
     dispatch(fetchAssetList());
   }, [dispatch]);
 
+  useEffect(() => {
+    if (location.state?.statusFilter) {
+      setStatusFilter(location.state.statusFilter);
+    }
+  }, [location.state?.statusFilter]);
+
   const inventoryAssets = getInventoryAssets(assetListData);
 
   const filteredAssets = inventoryAssets.filter((asset) => {
@@ -239,6 +246,7 @@ function Assets() {
       asset.assetCode,
       asset.serialNumber,
       asset.assignedTo,
+      asset.travelAssignment?.travelId,
       asset.officeName,
       asset.department,
     ]
@@ -403,59 +411,6 @@ function Assets() {
   return (
     <>
       <div className="app-container assets-page">
-        <div className="dashboard-grid">
-          <div className="dashboard-card">
-            <div className="card-left">
-              <span className="card-title-label">Total Assets</span>
-              <strong className="card-value-text">{stats.total}</strong>
-              <span className="card-sub-trend">+12 this month</span>
-            </div>
-            <div className="card-right-icon" style={{ color: "#2185f3", backgroundColor: "#2185f312" }}>
-              <FaBoxOpen />
-            </div>
-          </div>
-          <div className="dashboard-card">
-            <div className="card-left">
-              <span className="card-title-label">Available</span>
-              <strong className="card-value-text">{stats.available}</strong>
-              <span className="card-sub-trend">Ready to assign</span>
-            </div>
-            <div className="card-right-icon" style={{ color: "#10B981", backgroundColor: "#10B98112" }}>
-              <FaCheckCircle />
-            </div>
-          </div>
-          <div className="dashboard-card">
-            <div className="card-left">
-              <span className="card-title-label">Assigned</span>
-              <strong className="card-value-text">{stats.assigned}</strong>
-              <span className="card-sub-trend">Currently active</span>
-            </div>
-            <div className="card-right-icon" style={{ color: "#2563EB", backgroundColor: "#2563EB12" }}>
-              <FaUserCheck />
-            </div>
-          </div>
-          <div className="dashboard-card">
-            <div className="card-left">
-              <span className="card-title-label">Under Repair</span>
-              <strong className="card-value-text">{stats.repair}</strong>
-              <span className="card-sub-trend">In maintenance</span>
-            </div>
-            <div className="card-right-icon" style={{ color: "#F59E0B", backgroundColor: "#F59E0B12" }}>
-              <FaWrench />
-            </div>
-          </div>
-          <div className="dashboard-card alert-card">
-            <div className="card-left">
-              <span className="card-title-label">Warranty Alerts</span>
-              <strong className="card-value-text">{stats.warranty}</strong>
-              <span className="card-sub-trend">Expiring soon</span>
-            </div>
-            <div className="card-right-icon" style={{ color: "#EF4444", backgroundColor: "#EF444412" }}>
-              <FaShieldAlt />
-            </div>
-          </div>
-        </div>
-
         <div className="assets-toolbar">
           <div className="assets-toolbar-fields">
           <input
@@ -532,6 +487,7 @@ function Assets() {
   
                   <th>Asset Name</th>
                   <th>Assigned To</th>
+                  <th>Assignment Source</th>
                   <th>Serial No</th>
                   <th>Assets Code</th>
                   <th>Status</th>
@@ -549,6 +505,15 @@ function Assets() {
                       <td>{startIndex + index + 1}</td>
                       <td>{item.assetName}</td>
                       <td>{item.assignedTo}</td>
+                      <td>
+                        {item.travelAssignment?.travelId ? (
+                          <span className="asset-status-pill status-assigned">
+                            Travel {item.travelAssignment.travelId}
+                          </span>
+                        ) : (
+                          "-"
+                        )}
+                      </td>
                       <td>{item.serialNumber}</td>
                       <td>{item.assetCode}</td>
                       <td>
@@ -602,7 +567,7 @@ function Assets() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="10" className="no-data">
+                    <td colSpan="11" className="no-data">
                       No Assets Found
                     </td>
                   </tr>

@@ -346,6 +346,7 @@ function AppLayout() {
   const visibleNavItems = navItems.map((item) => {
     if (item.children) {
       const filteredChildren = item.children.filter((child) => {
+        if (roleHasMenuAccess(user?.role, item.label, roleAccess)) return true;
         if (roleHasMenuAccess(user?.role, child.label, roleAccess)) return true;
         return !roleAccess && child.menuRoles?.includes(user?.role);
       });
@@ -360,7 +361,9 @@ function AppLayout() {
 
   const logoutUser = () => {
     dispatch(logout());
-    navigate("/login", { replace: true });
+    const ssoLogoutUrl = "http://localhost:5004/api/auth/logout";
+    const redirectUri = `${window.location.origin}/login`;
+    window.location.href = `${ssoLogoutUrl}?redirect=${encodeURIComponent(redirectUri)}`;
   };
 
   const getInitials = (name) => {

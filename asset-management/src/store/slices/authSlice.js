@@ -31,10 +31,32 @@ const clearSession = () => {
 export const loginUser = createAsyncThunk("auth/login", async (payload, thunkAPI) => {
   try {
     const response = await apiInstance.post("/auth/login", payload);
-    saveSession(response.data);
+    if (!response.data.mfaRequired) {
+      saveSession(response.data);
+    }
     return response.data;
   } catch (error) {
     return thunkAPI.rejectWithValue(error.response?.data?.message || "Login failed");
+  }
+});
+
+export const verifyMfaCode = createAsyncThunk("auth/verifyMfaCode", async (payload, thunkAPI) => {
+  try {
+    const response = await apiInstance.post("/auth/mfa-verify", payload);
+    saveSession(response.data);
+    return response.data;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.response?.data?.message || "MFA Verification failed");
+  }
+});
+
+export const loginWithSsoCode = createAsyncThunk("auth/loginWithSsoCode", async (payload, thunkAPI) => {
+  try {
+    const response = await apiInstance.post("/auth/sso-login", payload);
+    saveSession(response.data);
+    return response.data;
+  } catch (error) {
+    return thunkAPI.rejectWithValue(error.response?.data?.message || "SSO Login failed");
   }
 });
 
@@ -81,10 +103,38 @@ const authSlice = createSlice({
       })
       .addCase(loginUser.fulfilled, (state, action) => {
         state.loading = false;
+        if (!action.payload.mfaRequired) {
+          state.user = action.payload.user;
+          state.token = action.payload.token;
+        }
+      })
+      .addCase(loginUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(verifyMfaCode.pending, (state) => {
+        state.loading = true;
+        state.error = "";
+      })
+      .addCase(verifyMfaCode.fulfilled, (state, action) => {
+        state.loading = false;
         state.user = action.payload.user;
         state.token = action.payload.token;
       })
-      .addCase(loginUser.rejected, (state, action) => {
+      .addCase(verifyMfaCode.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(loginWithSsoCode.pending, (state) => {
+        state.loading = true;
+        state.error = "";
+      })
+      .addCase(loginWithSsoCode.fulfilled, (state, action) => {
+        state.loading = false;
+        state.user = action.payload.user;
+        state.token = action.payload.token;
+      })
+      .addCase(loginWithSsoCode.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })

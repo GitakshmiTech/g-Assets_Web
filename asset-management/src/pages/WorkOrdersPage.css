@@ -12,6 +12,15 @@
   box-sizing: border-box;
 }
 
+.main-panel:has(.work-orders-page) {
+  scrollbar-width: none;
+}
+
+.main-panel:has(.work-orders-page)::-webkit-scrollbar {
+  display: none;
+  width: 0;
+}
+
 /* Metrics Panel */
 .metrics-panel {
   display: grid;
@@ -104,6 +113,11 @@
   display: flex;
   gap: 1.5rem;
   overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tabs-header::-webkit-scrollbar {
+  display: none;
 }
 
 .tab-btn {
@@ -145,6 +159,32 @@
   gap: 1rem;
   align-items: center;
   justify-content: space-between;
+}
+
+.create-work-order-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  min-height: 42px;
+  padding: 0.72rem 1.55rem;
+  background-color: #0d9488;
+  border: 1px solid #0d9488;
+  color: #ffffff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 8px 18px rgba(13, 148, 136, 0.16);
+  transition: all 0.2s;
+}
+
+.create-work-order-btn:hover {
+  background-color: #0f766e;
+  border-color: #0f766e;
+  transform: translateY(-1px);
 }
 
 .search-box {
@@ -571,6 +611,27 @@
   font-size: 0.925rem;
   line-height: 1.5;
   color: #78350f;
+}
+
+.complaint-summary-block textarea {
+  width: 100%;
+  min-height: 120px;
+  resize: vertical;
+  border: 1px solid #f5d08a;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  padding: 0.85rem 0.95rem;
+  outline: none;
+  box-sizing: border-box;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.complaint-summary-block textarea:focus {
+  border-color: #0d9488;
+  box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.14);
 }
 
 /* Form inputs styling */

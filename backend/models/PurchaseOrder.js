@@ -45,6 +45,9 @@ const purchaseOrderSchema = new mongoose.Schema(
       enum: ["PO Raised", "Received", "Partially Received"],
       default: "PO Raised",
     },
+    department: { type: String, default: "Operations" },
+    budgetCheck: { type: mongoose.Schema.Types.Mixed, default: {} },
+    expenseIntegration: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
   {
     timestamps: true,

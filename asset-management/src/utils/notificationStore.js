@@ -145,7 +145,8 @@ export function syncAssetNotifications(assets = []) {
     "sys_request_admin_",
     "sys_warranty_",
     "sys_maintenance_",
-    "sys_audit_"
+    "sys_audit_",
+    "sys_travel_assignment_"
   ];
 
   assets.forEach((asset) => {
@@ -266,6 +267,23 @@ export function syncAssetNotifications(assets = []) {
         },
         read: false,
         createdAt: asset.updatedAt || asset.createdAt || new Date().toISOString(),
+      });
+    }
+
+    if (asset.recordType !== "REQUEST" && asset.travelAssignment?.travelId) {
+      items.push({
+        id: `sys_travel_assignment_${asset._id}_${asset.travelAssignment.travelId}`,
+        title: "Travel asset assigned",
+        message: `${assetName} assigned to ${asset.travelAssignment.assignedFor || asset.assignedTo || "employee"} for travel ${asset.travelAssignment.travelId}.`,
+        type: "success",
+        meta: {
+          assetId: asset._id,
+          menuLabel: "Assignments",
+          route: "/assignments",
+          targetRoles: ["SUPER_ADMIN", "ADMIN", "IT_STAFF"],
+        },
+        read: false,
+        createdAt: asset.updatedAt || asset.assignedDate || asset.createdAt || new Date().toISOString(),
       });
     }
 

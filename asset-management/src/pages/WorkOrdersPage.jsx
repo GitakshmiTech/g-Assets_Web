@@ -52,6 +52,17 @@ const CATEGORY_OPTIONS = [
   "Office License Act"
 ];
 
+const emptyWorkOrderForm = {
+  assetId: "",
+  assetName: "",
+  complaintType: "Maintenance",
+  complaintTitle: "",
+  priority: "Medium",
+  raisedBy: "",
+  raisedByEmail: "",
+  employeeEmail: "",
+};
+
 function WorkOrdersPage() {
   const { showToast } = useToast();
   const user = useSelector((state) => state.auth?.user);
@@ -59,7 +70,7 @@ function WorkOrdersPage() {
   const [loading, setLoading] = useState(true);
 
   // RBAC Check
-  const isAdminOrManager = user?.role === "admin" || user?.role === "manager";
+  const canManageWorkOrders = ["SUPER_ADMIN", "ADMIN", "IT_STAFF"].includes(String(user?.role || "").toUpperCase());
 
   // Filters & State
   const [activeKpi, setActiveKpi] = useState("All"); // All, Open, Ongoing, Completed
@@ -70,6 +81,8 @@ function WorkOrdersPage() {
   // Drawer state
   const [selectedWO, setSelectedWO] = useState(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [createForm, setCreateForm] = useState(emptyWorkOrderForm);
   const [drawerLoading, setDrawerLoading] = useState(false);
 
   // Editable Drawer Form fields
@@ -77,6 +90,8 @@ function WorkOrdersPage() {
   const [assignedTo, setAssignedTo] = useState("");
   const [workOrderSelection, setWorkOrderSelection] = useState("");
   const [workOrderCost, setWorkOrderCost] = useState(0);
+  const [invoiceNumber, setInvoiceNumber] = useState("");
+  const [status, setStatus] = useState("Open");
   const [tasks, setTasks] = useState([]);
   const [checklists, setChecklists] = useState([]);
 
@@ -106,10 +121,10 @@ function WorkOrdersPage() {
   };
 
   useEffect(() => {
-    if (isAdminOrManager) {
+    if (canManageWorkOrders) {
       fetchWorkOrders();
     }
-  }, [isAdminOrManager]);
+  }, [canManageWorkOrders]);
 
   // Sync Drawer editable state when selectedWO changes
   useEffect(() => {
@@ -118,6 +133,8 @@ function WorkOrdersPage() {
       setAssignedTo(selectedWO.assignedTo || "");
       setWorkOrderSelection(selectedWO.workOrderSelection || "");
       setWorkOrderCost(selectedWO.workOrderCost || 0);
+      setInvoiceNumber(selectedWO.invoiceNumber || "");
+      setStatus(selectedWO.status || "Open");
       setTasks(selectedWO.tasks ? [...selectedWO.tasks] : []);
       setChecklists(selectedWO.checklists ? [...selectedWO.checklists] : []);
     }
@@ -195,6 +212,51 @@ function WorkOrdersPage() {
     setChecklists(updated);
   };
 
+  const handleCreateField = (field, value) => {
+    setCreateForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleCreateWorkOrder = async (e) => {
+    e.preventDefault();
+    if (!createForm.assetName.trim() || !createForm.complaintTitle.trim()) {
+      showToast({
+        title: "Required Details Missing",
+        message: "Asset name and complaint title are required.",
+        type: "error",
+      });
+      return;
+    }
+
+    try {
+      setDrawerLoading(true);
+      const response = await apiInstance.post("/work-orders", {
+        ...createForm,
+        raisedBy: createForm.raisedBy || user?.name || "Asset User",
+        raisedByEmail: createForm.raisedByEmail || user?.email || "",
+        employeeEmail: createForm.employeeEmail || createForm.raisedByEmail || user?.email || "",
+      });
+
+      if (response.data.success) {
+        showToast({
+          title: "Work Order Created",
+          message: "Open it with Review, add cost/invoice, then mark Completed.",
+          type: "success",
+        });
+        setCreateForm(emptyWorkOrderForm);
+        setIsCreateOpen(false);
+        fetchWorkOrders();
+      }
+    } catch (error) {
+      showToast({
+        title: "Create Failed",
+        message: error.response?.data?.message || "Unable to create work order.",
+        type: "error",
+      });
+    } finally {
+      setDrawerLoading(false);
+    }
+  };
+
   // Submit/Update changes to backend
   const handleUpdateWorkOrder = async (e) => {
     e.preventDefault();
@@ -222,6 +284,24 @@ function WorkOrdersPage() {
       return;
     }
 
+    if (status === "Completed" && !(Number(workOrderCost) > 0)) {
+      showToast({
+        title: "Cost Required",
+        message: "Enter maintenance cost before completing the work order.",
+        type: "error",
+      });
+      return;
+    }
+
+    if (status === "Completed" && !String(invoiceNumber || "").trim()) {
+      showToast({
+        title: "Invoice Required",
+        message: "Enter invoice number before completing the work order.",
+        type: "error",
+      });
+      return;
+    }
+
     try {
       setDrawerLoading(true);
       const payload = {
@@ -229,6 +309,8 @@ function WorkOrdersPage() {
         assignedTo,
         workOrderSelection,
         workOrderCost: Number(workOrderCost) || 0,
+        invoiceNumber,
+        status,
         tasks,
         checklists
       };
@@ -238,7 +320,9 @@ function WorkOrdersPage() {
       if (response.data.success) {
         showToast({
           title: "Work Order Updated",
-          message: response.data.message || `Successfully reviewed ${selectedWO.complaintId}.`,
+          message: response.data.reimbursementPost
+            ? "Completed and reimbursement pushed to Expense."
+            : response.data.message || `Successfully reviewed ${selectedWO.complaintId}.`,
           type: "success",
         });
         
@@ -290,14 +374,14 @@ function WorkOrdersPage() {
     }
   };
 
-  if (!isAdminOrManager) {
+  if (!canManageWorkOrders) {
     return (
       <div className="app-container work-orders-page">
         <div className="procurement-empty-state" style={{ marginTop: '100px' }}>
           <FaWrench style={{ fontSize: '48px', color: '#94a3b8', marginBottom: '16px' }} />
           <h3>Access Restricted</h3>
           <p>Work Orders are generated automatically when employees submit Complaints in the Requests module.</p>
-          <p style={{ marginTop: '8px' }}>Only Administrators and Maintenance Managers have permission to review, assign, and update Work Orders.</p>
+          <p style={{ marginTop: '8px' }}>Only Administrators and IT/Maintenance users have permission to review, assign, and update Work Orders.</p>
         </div>
       </div>
     );
@@ -425,6 +509,14 @@ function WorkOrdersPage() {
             ))}
           </select>
         </div>
+
+        <button
+          type="button"
+          className="create-work-order-btn"
+          onClick={() => setIsCreateOpen(true)}
+        >
+          <FaPlus /> Create Work Order
+        </button>
       </div>
 
       {/* Complaints Listing Table */}
@@ -510,6 +602,78 @@ function WorkOrdersPage() {
       </div>
 
       {/* Review Complaint Drawer Overlay */}
+      {isCreateOpen && (
+        <div className="drawer-overlay" onClick={() => setIsCreateOpen(false)}>
+          <div className="review-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="drawer-header">
+              <div className="header-title-block">
+                <span className="drawer-badge">New</span>
+                <h2>Create Work Order</h2>
+              </div>
+              <button
+                type="button"
+                className="close-drawer-btn"
+                onClick={() => setIsCreateOpen(false)}
+              >
+                <FaTimes />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateWorkOrder} className="drawer-form">
+              <div className="drawer-body">
+                <div className="form-fields-grid">
+                  <div className="form-group">
+                    <label>Asset ID</label>
+                    <input value={createForm.assetId} onChange={(e) => handleCreateField("assetId", e.target.value)} placeholder="e.g. DEMO-WAR-001" />
+                  </div>
+                  <div className="form-group">
+                    <label>Asset Name</label>
+                    <input value={createForm.assetName} onChange={(e) => handleCreateField("assetName", e.target.value)} placeholder="e.g. Demo Dell Latitude" required />
+                  </div>
+                  <div className="form-group">
+                    <label>Complaint Type</label>
+                    <input value={createForm.complaintType} onChange={(e) => handleCreateField("complaintType", e.target.value)} placeholder="Maintenance" />
+                  </div>
+                  <div className="form-group">
+                    <label>Priority</label>
+                    <select value={createForm.priority} onChange={(e) => handleCreateField("priority", e.target.value)}>
+                      <option value="Low">Low</option>
+                      <option value="Medium">Medium</option>
+                      <option value="High">High</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Raised By</label>
+                    <input value={createForm.raisedBy} onChange={(e) => handleCreateField("raisedBy", e.target.value)} placeholder={user?.name || "Employee name"} />
+                  </div>
+                  <div className="form-group">
+                    <label>Employee Email</label>
+                    <input type="email" value={createForm.employeeEmail} onChange={(e) => handleCreateField("employeeEmail", e.target.value)} placeholder={user?.email || "employee@company.com"} />
+                  </div>
+                </div>
+
+                <div className="complaint-summary-block">
+                  <label>Complaint Title/Description</label>
+                  <textarea
+                    value={createForm.complaintTitle}
+                    onChange={(e) => handleCreateField("complaintTitle", e.target.value)}
+                    placeholder="Describe the maintenance or repair issue"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="drawer-footer">
+                <button type="button" className="drawer-cancel-btn" onClick={() => setIsCreateOpen(false)} disabled={drawerLoading}>Cancel</button>
+                <button type="submit" className="drawer-submit-btn" disabled={drawerLoading}>
+                  {drawerLoading ? <><FaSpinner className="spin" /> Creating...</> : "Create Work Order"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {isDrawerOpen && selectedWO && (
         <div className="drawer-overlay" onClick={() => setIsDrawerOpen(false)}>
           <div className="review-drawer" onClick={(e) => e.stopPropagation()}>
@@ -600,7 +764,7 @@ function WorkOrdersPage() {
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="cost-input">Estimated Maintenance Cost ($)</label>
+                    <label htmlFor="cost-input">Maintenance Cost (INR)</label>
                     <input
                       id="cost-input"
                       type="number"
@@ -610,6 +774,30 @@ function WorkOrdersPage() {
                       onChange={(e) => setWorkOrderCost(e.target.value)}
                       placeholder="0.00"
                     />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="invoice-input">Invoice Number</label>
+                    <input
+                      id="invoice-input"
+                      type="text"
+                      value={invoiceNumber}
+                      onChange={(e) => setInvoiceNumber(e.target.value)}
+                      placeholder="e.g. REP-INV-1001"
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label htmlFor="status-select">Work Order Status</label>
+                    <select
+                      id="status-select"
+                      value={status}
+                      onChange={(e) => setStatus(e.target.value)}
+                    >
+                      <option value="Open">Open</option>
+                      <option value="In Progress">In Progress</option>
+                      <option value="Completed">Completed</option>
+                    </select>
                   </div>
                 </div>
 
