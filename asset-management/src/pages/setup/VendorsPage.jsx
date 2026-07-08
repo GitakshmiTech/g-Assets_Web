@@ -10,51 +10,7 @@ export default function VendorsPage() {
   const [toastMessage, setToastMessage] = useState("");
 
   // Seeded mock vendors list
-  const [vendors, setVendors] = useState([
-    {
-      id: "VND001",
-      name: "Zylker Technologies",
-      contact: "Lucas Samuel",
-      email: "lucas.s@zylker.com",
-      phone: "+1 (555) 234-5678",
-      address: "102 Silicon Valley Blvd, San Jose, CA",
-      reliability: "High",
-      totalOrders: 15,
-      suppliedAssets: [
-        { id: "AST-CAN-3003", name: "Demo Canon Printer", category: "Printer", serialNo: "DEMO-CAN-3003", status: "Available", addedOn: "Dec 2, 2023" },
-        { id: "AST-HP-2002", name: "Demo HP Monitor", category: "Monitor", serialNo: "DEMO-HP-2002", status: "Under Repair", addedOn: "Sep 7, 2024" },
-        { id: "AST-APL-8001", name: "Apple MacBook Pro M3", category: "Laptop", serialNo: "APL-MBP-M3-99", status: "Assigned", addedOn: "Jan 12, 2026" },
-      ]
-    },
-    {
-      id: "VND002",
-      name: "Luna Enterprises",
-      contact: "Sarah Jenkins",
-      email: "sarah.j@lunaent.com",
-      phone: "+1 (555) 876-5432",
-      address: "74 Broadway Ave, New York, NY",
-      reliability: "Premium",
-      totalOrders: 28,
-      suppliedAssets: [
-        { id: "AST-SAM-24", name: "Samsung S24 Ultra", category: "Mobile Phone", serialNo: "SAM-S24U-777", status: "Available", addedOn: "Mar 10, 2026" },
-        { id: "AST-APL-16", name: "iPhone 16 Pro Max", category: "Mobile Phone", serialNo: "APL-IP16P-44", status: "Assigned", addedOn: "May 2, 2026" },
-      ]
-    },
-    {
-      id: "VND003",
-      name: "Apex Office Supplies",
-      contact: "Michael Chang",
-      email: "m.chang@apexoffice.com",
-      phone: "+1 (555) 456-7890",
-      address: "442 industrial Parkway, Austin, TX",
-      reliability: "Medium",
-      totalOrders: 8,
-      suppliedAssets: [
-        { id: "AST-FUR-50", name: "Ergonomic Office Chair", category: "Furniture", serialNo: "ERG-CHR-501", status: "Available", addedOn: "Feb 18, 2025" },
-        { id: "AST-FUR-88", name: "Executive Standing Desk", category: "Furniture", serialNo: "EXE-DSK-881", status: "Available", addedOn: "Apr 5, 2025" },
-      ]
-    }
-  ]);
+  const [vendors, setVendors] = useState([]);
 
   // Form State for Adding New Vendor
   const [formData, setFormData] = useState({

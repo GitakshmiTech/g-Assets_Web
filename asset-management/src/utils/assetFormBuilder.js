@@ -7,9 +7,9 @@ export const FORM_TYPES = {
 };
 
 const STORAGE_KEYS = {
-  [FORM_TYPES.ASSET]: "assetFormBuilderConfig",
-  [FORM_TYPES.REQUEST]: "requestFormBuilderConfig",
-  [FORM_TYPES.PROCUREMENT]: "procurementFormBuilderConfig",
+  [FORM_TYPES.ASSET]: "assetFormBuilderConfig_v2",
+  [FORM_TYPES.REQUEST]: "requestFormBuilderConfig_v2",
+  [FORM_TYPES.PROCUREMENT]: "procurementFormBuilderConfig_v2",
 };
 
 const ASSET_EXCLUDED_SECTION_KEYS = new Set(["Request & Purchase Details"]);
@@ -24,12 +24,25 @@ export const assetFormSections = [
       { name: "category", label: "Category", required: true, locked: true },
       { name: "subCategory", label: "Sub Category" },
       { name: "assetStatus", label: "Asset Status", required: true, locked: true },
-      { name: "assignedTo", label: "Assigned To" },
       { name: "serialNumber", label: "Serial Number" },
       { name: "assetCode", label: "Asset Code" },
       { name: "brand", label: "Brand" },
       { name: "model", label: "Model" },
       { name: "assetType", label: "Asset Type" },
+      { name: "officeName", label: "Office Name" },
+    ],
+  },
+  {
+    title: "Lifecycle & Warranty",
+    description: "Purchase dates, warranty, and maintenance tracking.",
+    group: "All",
+    fields: [
+      { name: "purchaseDate", label: "Purchase Date", required: true },
+      { name: "price", label: "Purchase Cost" },
+      { name: "vendor", label: "Vendor" },
+      { name: "warrantyPeriod", label: "Warranty Period (Months)" },
+      { name: "warrantyReminderDays", label: "Warranty Reminder Days" },
+      { name: "maintenancePeriod", label: "Maintenance Period (Months)" },
     ],
   },
   {
@@ -57,42 +70,6 @@ export const assetFormSections = [
       { name: "storage", label: "Storage" },
       { name: "antivirus", label: "Antivirus" },
       { name: "domainName", label: "Domain" },
-    ],
-  },
-  {
-    title: "Purchase & Invoice",
-    description: "Recorded purchase details for inventory assets.",
-    group: "All",
-    fields: [
-      { name: "purchaseDate", label: "Purchase Date" },
-      { name: "vendor", label: "Vendor" },
-      { name: "invoiceNumber", label: "Invoice Number" },
-      { name: "price", label: "Purchase Cost" },
-    ],
-  },
-  {
-    title: "Warranty, Office & Assignment",
-    description: "Manage reminders, branch placement, and employee assignment.",
-    group: "All",
-    fields: [
-      { name: "warrantyPeriod", label: "Warranty Period (Months)" },
-      { name: "warrantyStart", label: "Warranty Start" },
-      { name: "warrantyEnd", label: "Warranty End" },
-      { name: "warrantyReminderDays", label: "Reminder Days" },
-      { name: "maintenancePeriod", label: "Maintenance Period (Months)" },
-      { name: "officeName", label: "Office Name" },
-      { name: "branchCode", label: "Branch Code" },
-      { name: "floor", label: "Floor" },
-      { name: "department", label: "Department" },
-      { name: "room", label: "Room/Cabin" },
-      { name: "city", label: "City" },
-      { name: "state", label: "State" },
-      { name: "officeContactPerson", label: "Office Contact Person" },
-      { name: "officePhone", label: "Office Phone" },
-      { name: "assignedDate", label: "Assigned Date" },
-      { name: "employeeId", label: "Employee ID" },
-      { name: "employeeEmail", label: "Employee Email" },
-      { name: "assignedBy", label: "Assigned By" },
     ],
   },
   {
@@ -324,7 +301,14 @@ const loadConfigForType = (formType) => {
   if (typeof window === "undefined") return withCatalog({ ...defaultConfig });
 
   try {
-    const saved = JSON.parse(window.localStorage.getItem(STORAGE_KEYS[formType]) || "{}");
+    let saved = JSON.parse(window.localStorage.getItem(STORAGE_KEYS[formType]) || "{}");
+    
+    // Cache bust to force loading new fields like officeName
+    if (formType === FORM_TYPES.ASSET && !saved._v2_office) {
+      window.localStorage.removeItem(STORAGE_KEYS[formType]);
+      saved = {};
+    }
+
     const config = Object.keys(defaultConfig).reduce((acc, name) => {
       acc[name] = { ...defaultConfig[name], ...(saved[name] || {}), locked: false };
       return acc;
@@ -364,6 +348,7 @@ export const loadRequestFormConfig = () => loadConfigForType(FORM_TYPES.REQUEST)
 export const loadProcurementFormConfig = () => loadConfigForType(FORM_TYPES.PROCUREMENT);
 
 export const saveAssetFormConfig = (config) => {
+  config._v2_office = true;
   window.localStorage.setItem(STORAGE_KEYS[FORM_TYPES.ASSET], JSON.stringify(config));
   window.dispatchEvent(new CustomEvent("form-builder-updated", { detail: { formType: FORM_TYPES.ASSET } }));
 };

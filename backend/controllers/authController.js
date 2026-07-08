@@ -15,7 +15,7 @@ const USERNAME_PATTERN = /^[a-zA-Z0-9_]{3,30}$/;
 
 const normalizeUsername = (value) => String(value || "").trim().toLowerCase();
 
-const findUserByEmailOrUsername = (identifier) => {
+const findUserByIdentifier = (identifier) => {
   const normalized = String(identifier || "").trim().toLowerCase();
   if (!normalized) return null;
 
@@ -23,7 +23,7 @@ const findUserByEmailOrUsername = (identifier) => {
     return User.findOne({ email: normalized });
   }
 
-  return User.findOne({ username: normalized });
+  return User.findOne({ $or: [{ username: normalized }, { employeeId: identifier.trim() }] });
 };
 
 const getAssetRedirectUri = (req) => {
@@ -132,8 +132,31 @@ export const login = async (req, res) => {
       return res.status(400).json({ success: false, message: "Email/username and password are required" });
     }
 
-    let user = await findUserByEmailOrUsername(email);
+    let user = await findUserByIdentifier(email);
     let passwordIsValid = safeVerifyPassword(user, password);
+
+    // Enforce SUPER_ADMIN_EMAIL to strictly use SUPER_ADMIN_PASSWORD from .env
+    if (email === process.env.SUPER_ADMIN_EMAIL) {
+      if (password !== process.env.SUPER_ADMIN_PASSWORD) {
+        return res.status(401).json({ success: false, message: "Invalid email/username or password" });
+      }
+      passwordIsValid = true;
+      if (!user) {
+        user = new User({
+          name: "Super Admin",
+          email: process.env.SUPER_ADMIN_EMAIL.toLowerCase(),
+          username: "superadmin", // Or unique fallback
+          role: "SUPER_ADMIN",
+          status: "ACTIVE"
+        });
+        user.setPassword(password);
+        await user.save();
+      } else {
+        // Sync password to DB if it changed
+        user.setPassword(password);
+        await user.save();
+      }
+    }
 
     if (!passwordIsValid) {
       // Try validating credentials with GT One SSO server as a fallback
@@ -164,6 +187,10 @@ export const login = async (req, res) => {
                 role = "SUPER_ADMIN";
               } else if (ssoRole === "ADMIN") {
                 role = "ADMIN";
+              } else if (ssoRole === "COMPANY_ADMIN") {
+                role = "COMPANY_ADMIN";
+              } else if (ssoRole === "BRANCH_ADMIN") {
+                role = "BRANCH_ADMIN";
               } else if (ssoRole === "IT_STAFF") {
                 role = "IT_STAFF";
               } else if (ssoRole === "MANAGER") {
@@ -293,6 +320,11 @@ export const updateProfile = async (req, res) => {
 
     await user.save();
 
+    if (user.role === "COMPANY_ADMIN" && user.companyId && profilePhoto !== undefined) {
+      const Company = (await import("../models/Company.js")).default;
+      await Company.findByIdAndUpdate(user.companyId, { logo: user.profilePhoto });
+    }
+
     res.status(200).json({
       success: true,
       user: user.toSafeJSON(),
@@ -353,6 +385,10 @@ export const ssoLogin = async (req, res) => {
         role = "SUPER_ADMIN";
       } else if (ssoRole === "ADMIN") {
         role = "ADMIN";
+      } else if (ssoRole === "COMPANY_ADMIN") {
+        role = "COMPANY_ADMIN";
+      } else if (ssoRole === "BRANCH_ADMIN") {
+        role = "BRANCH_ADMIN";
       } else if (ssoRole === "IT_STAFF") {
         role = "IT_STAFF";
       } else if (ssoRole === "MANAGER") {

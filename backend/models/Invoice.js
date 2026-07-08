@@ -12,6 +12,11 @@ const invoiceProductSchema = new mongoose.Schema(
 
 const invoiceSchema = new mongoose.Schema(
   {
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      default: null,
+    },
     invoiceNo: {
       type: String,
       required: true,

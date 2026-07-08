@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useLocation, useParams, useSearchParams } from "react-router-dom";
+import { useLocation, useParams, useSearchParams, useNavigate } from "react-router-dom";
+import { FaArrowLeft } from "react-icons/fa";
 import {
   fetchScannedAsset,
   fetchSingleAsset,
@@ -18,6 +19,7 @@ function AssetDetails() {
   const { id } = useParams();
   const [searchParams] = useSearchParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const dispatch = useDispatch();
   const { showToast } = useToast();
   const { singleAssetData, loading, error } = useSelector((state) => state.assetList);
@@ -101,7 +103,7 @@ function AssetDetails() {
     try {
       await saveWorkflow({
         transferHistory: [...(asset.transferHistory || []), transferForm],
-        assignedTo: transferForm.toEmployee || asset.assignedTo,
+        assignedTo: transferForm.toEmployee || (typeof asset.assignedTo === 'object' ? asset.assignedTo?._id : asset.assignedTo),
         officeName: transferForm.toOffice || asset.officeName,
         lifecycleTimeline: [
           ...(asset.lifecycleTimeline || []),
@@ -161,20 +163,25 @@ function AssetDetails() {
   return (
     <div className={`asset-container${activeTab === "sticker" ? " asset-container--sticker-fit" : ""}`}>
       <header className="asset-header">
-        <div>
-          <h1>{asset.assetName}</h1>
+        <div className="asset-header-left">
+          <div className="asset-header-title">
+            <h1>{asset.assetName}</h1>
+            <span className={`status-badge ${asset.assetStatus?.toLowerCase()}`}>
+              {asset.assetStatus}
+            </span>
+          </div>
           <p>{asset.assetCode || asset.serialNumber || "Asset record"}</p>
         </div>
-        <span className={`status-badge ${asset.assetStatus?.toLowerCase()}`}>
-          {asset.assetStatus}
-        </span>
+        <button className="back-button" onClick={() => navigate(-1)}>
+          <FaArrowLeft /> Back
+        </button>
       </header>
 
       <div className="metric-grid">
         <div className="metric-card"><span>Total Repair Cost</span><strong>{currency(totalRepairCost)}</strong></div>
         <div className="metric-card"><span>Warranty</span><strong>{warrantyStatus}</strong></div>
         <div className="metric-card"><span>Office</span><strong>{asset.officeName || "-"}</strong></div>
-        <div className="metric-card"><span>Assigned To</span><strong>{asset.assignedTo || "Inventory"}</strong></div>
+        <div className="metric-card"><span>Assigned To</span><strong>{asset.assignedTo?.name || (typeof asset.assignedTo === 'string' ? asset.assignedTo : "Inventory")}</strong></div>
       </div>
 
       <div className="tab-row">

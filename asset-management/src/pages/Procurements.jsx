@@ -9,32 +9,7 @@ import { useToast } from "../components/toast/toastStore";
 import apiInstance from "../apis/apiConfig";
 import { TablePagination, TablePageSizeSelector } from "../components/common/ModuleComponents";
 
-const VENDORS = [
-  {
-    orgName: "Luna",
-    contactPerson: "Luna Lovegood",
-    email: "contact@luna-it.com",
-    phone: "+91-9988776611",
-    logoColor: "#14B8A6",
-    logoText: "L",
-  },
-  {
-    orgName: "Zylker",
-    contactPerson: "Zack Rider",
-    email: "info@zylker.com",
-    phone: "+91-9090909090",
-    logoColor: "#6366F1",
-    logoText: "Z",
-  },
-  {
-    orgName: "NetApp Inc",
-    contactPerson: "Nathan Drake",
-    email: "support@netapp.com",
-    phone: "+91-8888777766",
-    logoColor: "#3B82F6",
-    logoText: "N",
-  },
-];
+const VENDORS = [];
 
 function Procurements() {
   const navigate = useNavigate();

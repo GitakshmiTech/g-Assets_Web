@@ -104,9 +104,7 @@ export const deleteRole = async (req, res) => {
       return res.status(404).json({ success: false, message: "Role not found" });
     }
 
-    if (role.isSystem) {
-      return res.status(403).json({ success: false, message: "System roles cannot be deleted" });
-    }
+    // System role restriction removed as per user request
 
     const usersWithRole = await User.countDocuments({ role: key });
     if (usersWithRole > 0) {

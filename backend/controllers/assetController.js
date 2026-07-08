@@ -57,6 +57,15 @@ const normalizeAssetPayload = (payload) => {
     });
   }
 
+  if (data.assignedTo && data.assignedTo !== "") {
+    data.assetStatus = "ASSIGNED";
+  } else {
+    data.assignedTo = null;
+    if (data.assetStatus === "ASSIGNED" || !data.assetStatus) {
+      data.assetStatus = "AVAILABLE";
+    }
+  }
+
   if (data.assetStatus) {
     data.assetStatus = normalizeStatus(data.assetStatus);
   }
@@ -383,7 +392,11 @@ const renderScanAssetPage = (asset) => {
 
 export const getAllAssets = async (req, res) => {
   try {
-    const assets = await Asset.find().sort({ createdAt: -1 });
+    const filter = {};
+    if (req.user.role !== "SUPER_ADMIN" && req.user.companyId) {
+      filter.companyId = req.user.companyId;
+    }
+    const assets = await Asset.find(filter).populate("assignedTo", "name email department employeeId profilePhoto").sort({ createdAt: -1 });
     const assetsWithPhotos = await attachRequestedByPhoto(assets);
 
     res.status(200).json({
@@ -426,6 +439,11 @@ export const createAsset = async (req, res) => {
       data.employeeEmail = data.employeeEmail || req.user?.email || "";
       data.employeeId = data.employeeId || req.user?.employeeId || "";
     }
+    
+    if (req.user.role !== "SUPER_ADMIN" && req.user.companyId) {
+      data.companyId = req.user.companyId;
+    }
+
     data.qrToken = crypto.randomBytes(16).toString("hex");
     data.lifecycleTimeline = [
       {
@@ -448,6 +466,7 @@ export const createAsset = async (req, res) => {
       asset.qrCode = await generateQrCode(asset, req);
     }
     await asset.save();
+    await asset.populate("assignedTo", "name email department employeeId profilePhoto");
     
     const resolvedAsset = await attachRequestedByPhoto(asset);
     res.status(201).json({
@@ -464,7 +483,11 @@ export const createAsset = async (req, res) => {
 
 export const getDashboard = async (req, res) => {
   try {
-    const assets = await Asset.find().sort({ createdAt: -1 });
+    const filter = {};
+    if (req.user.role !== "SUPER_ADMIN" && req.user.companyId) {
+      filter.companyId = req.user.companyId;
+    }
+    const assets = await Asset.find(filter).sort({ createdAt: -1 });
     const warrantyAlerts = assets.filter((asset) => {
       const days = getWarrantyDays(asset);
       return days !== null && days >= 0 && days <= Number(asset.warrantyReminderDays || 10);
@@ -545,12 +568,19 @@ export const getDashboard = async (req, res) => {
 
 export const getAsset = async (req, res) => {
   try {
-    const asset = await Asset.findById(req.params.id);
+    const asset = await Asset.findById(req.params.id).populate("assignedTo", "name email department employeeId profilePhoto");
 
     if (!asset) {
       return res.status(404).json({
         success: false,
         message: "Asset not found",
+      });
+    }
+
+    if (req.user.role !== "SUPER_ADMIN" && req.user.companyId && String(asset.companyId) !== String(req.user.companyId)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied to this asset",
       });
     }
 
@@ -597,6 +627,13 @@ export const updateAsset = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Asset not found",
+      });
+    }
+
+    if (req.user.role !== "SUPER_ADMIN" && req.user.companyId && String(asset.companyId) !== String(req.user.companyId)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied to update this asset",
       });
     }
 
@@ -696,6 +733,7 @@ export const updateAsset = async (req, res) => {
     }
 
     const updatedAsset = await asset.save();
+    await updatedAsset.populate("assignedTo", "name email department employeeId profilePhoto");
     const resolvedAsset = await attachRequestedByPhoto(updatedAsset);
 
     res.status(200).json({
@@ -767,7 +805,11 @@ export const createWorkflowEvent = async (req, res) => {
 
 export const getReports = async (req, res) => {
   try {
-    const assets = await Asset.find().sort({ createdAt: -1 });
+    const filter = {};
+    if (req.user.role !== "SUPER_ADMIN" && req.user.companyId) {
+      filter.companyId = req.user.companyId;
+    }
+    const assets = await Asset.find(filter).sort({ createdAt: -1 });
     const repairTickets = assets.flatMap((asset) =>
       (asset.repairHistory || []).map((ticket) => ({
         ...ticket.toObject(),
@@ -834,7 +876,7 @@ export const getReports = async (req, res) => {
 
 export const getScanAsset = async (req, res) => {
   try {
-    const asset = await Asset.findById(req.params.id);
+    const asset = await Asset.findById(req.params.id).populate("assignedTo", "name email department employeeId profilePhoto");
     const wantsHtml = req.accepts(["html", "json"]) === "html";
 
     if (!asset || asset.qrToken !== req.query.t) {
@@ -1113,6 +1155,13 @@ export const deleteAsset = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Asset not found",
+      });
+    }
+
+    if (req.user.role !== "SUPER_ADMIN" && req.user.companyId && String(asset.companyId) !== String(req.user.companyId)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied to delete this asset",
       });
     }
 

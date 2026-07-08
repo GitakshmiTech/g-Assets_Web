@@ -6,6 +6,10 @@ export const getAllInvoices = async (req, res) => {
     const { search, date } = req.query;
     const query = {};
 
+    if (req.user.role !== "SUPER_ADMIN" && req.user.companyId) {
+      query.companyId = req.user.companyId;
+    }
+
     if (search) {
       const searchRegex = new RegExp(search, "i");
       query.$or = [

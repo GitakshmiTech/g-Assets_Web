@@ -5,6 +5,7 @@ import { useToast } from "../components/toast/toastStore";
 import { updateUserSession } from "../store/slices/authSlice";
 import { ROLE_LABELS } from "../utils/permissions";
 import { PageTitle } from "../components/common/ModuleComponents";
+import { Eye, EyeOff } from "lucide-react";
 import "./Profile.css";
 
 function Profile() {
@@ -25,6 +26,8 @@ function Profile() {
 
   const [isSaving, setIsSaving] = useState(false);
   const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -485,30 +488,46 @@ function Profile() {
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", padding: "20px", background: "var(--bg-surface)", borderTop: "1px solid var(--border-color)" }}>
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   <label htmlFor="newPassword" style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>New Password</label>
-                  <input
-                    type="password"
-                    id="newPassword"
-                    name="newPassword"
-                    className="custom-input"
-                    style={{ height: "36px", padding: "0 12px", fontSize: "13px", boxSizing: "border-box" }}
-                    value={formData.newPassword}
-                    onChange={handleInputChange}
-                    placeholder="Enter new password"
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      id="newPassword"
+                      name="newPassword"
+                      className="custom-input"
+                      style={{ height: "36px", padding: "0 12px", fontSize: "13px", boxSizing: "border-box", width: "100%" }}
+                      value={formData.newPassword}
+                      onChange={handleInputChange}
+                      placeholder="Enter new password"
+                    />
+                    <div 
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#6c757d", display: "flex", alignItems: "center" }}
+                    >
+                      {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </div>
+                  </div>
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                   <label htmlFor="confirmPassword" style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Confirm New Password</label>
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    className="custom-input"
-                    style={{ height: "36px", padding: "0 12px", fontSize: "13px", boxSizing: "border-box" }}
-                    value={formData.confirmPassword}
-                    onChange={handleInputChange}
-                    placeholder="Confirm new password"
-                  />
+                  <div style={{ position: "relative" }}>
+                    <input
+                      type={showConfirmPassword ? "text" : "password"}
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      className="custom-input"
+                      style={{ height: "36px", padding: "0 12px", fontSize: "13px", boxSizing: "border-box", width: "100%" }}
+                      value={formData.confirmPassword}
+                      onChange={handleInputChange}
+                      placeholder="Confirm new password"
+                    />
+                    <div 
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#6c757d", display: "flex", alignItems: "center" }}
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

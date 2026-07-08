@@ -1,5 +1,5 @@
-const COMPUTER_CATEGORY_NAMES = ["laptop", "pc", "desktop", "computer", "mobile"];
-const IT_CATEGORY_NAMES = [...COMPUTER_CATEGORY_NAMES, "monitor", "printer"];
+const COMPUTER_CATEGORY_NAMES = ["computers & workstations", "server room & data infrastructure", "networking equipment", "mobile & smart devices"];
+const IT_CATEGORY_NAMES = [...COMPUTER_CATEGORY_NAMES, "monitors & peripherals", "office automation & av devices", "power & electrical assets", "security & access control"];
 
 const cloneCategories = (categories) =>
   categories.map((c) => ({
@@ -9,92 +9,241 @@ const cloneCategories = (categories) =>
 
 /** Default catalog — editable from Master Editor (Asset form). */
 export const DEFAULT_CATEGORY_CATALOG = {
-  groups: ["IT", "Building", "Furniture", "Vehicle", "General"],
+  groups: ["Hardware", "Digital", "Miscellaneous"],
   categories: [
     {
-      id: "laptop",
-      name: "Laptop",
-      subCategories: ["Business Laptop", "Ultrabook", "Gaming"],
+      id: "computers_workstations",
+      name: "Computers & Workstations",
+      subCategories: [
+        "Developer Laptops",
+        "Designer MacBooks",
+        "Management/HR Laptops",
+        "Office Desktops",
+        "All-in-One (AIO) PCs",
+        "Testing Workstations",
+        "Linux/Ubuntu Workstations",
+        "Spare/Backup Laptops"
+      ],
       network: true,
-      group: "IT",
+      group: "Hardware",
     },
     {
-      id: "pc",
-      name: "PC",
-      subCategories: ["Desktop", "Workstation"],
+      id: "monitors_peripherals",
+      name: "Monitors & Peripherals",
+      subCategories: [
+        "24-inch Monitors",
+        "27-inch Monitors",
+        "Dual Monitor Mounts / Arms",
+        "Wired Keyboards",
+        "Wireless Keyboards",
+        "Mechanical Keyboards",
+        "Standard Optical Mice",
+        "Ergonomic/Wireless Mice",
+        "Graphic Tablets / Stylus Pens",
+        "Laptop Docking Stations / USB-C Hubs",
+        "Laptop Cooling Pads",
+        "External Webcams",
+        "Noise-Cancelling Headsets",
+        "Wireless Earbuds"
+      ],
+      network: false,
+      group: "Hardware",
+    },
+    {
+      id: "server_infrastructure",
+      name: "Server Room & Data Infrastructure",
+      subCategories: [
+        "Rack Servers",
+        "Tower Servers",
+        "Blade Servers",
+        "NAS Storage Boxes",
+        "SAN Arrays",
+        "Internal Hard Drives",
+        "Internal SSDs",
+        "External Portable HDDs/SSDs",
+        "Server Racks",
+        "PDU",
+        "Server KVM Switches",
+        "Hardware Security Modules"
+      ],
       network: true,
-      group: "IT",
+      group: "Hardware",
     },
     {
-      id: "desktop",
-      name: "Desktop",
-      subCategories: ["Office Desktop", "All-in-One"],
+      id: "networking_equipment",
+      name: "Networking Equipment",
+      subCategories: [
+        "Core Routers",
+        "Edge Firewalls",
+        "Managed Network Switches",
+        "Unmanaged Network Switches",
+        "Wi-Fi Access Points",
+        "Wi-Fi Controllers",
+        "LAN Patch Panels",
+        "VoIP Gateways",
+        "IP Phones",
+        "Network Range Extenders",
+        "Fiber Optic Media Converters",
+        "4G/5G Backup Dongles"
+      ],
       network: true,
-      group: "IT",
+      group: "Hardware",
     },
     {
-      id: "computer",
-      name: "Computer",
-      subCategories: ["Mini PC", "Tower"],
+      id: "mobile_smart_devices",
+      name: "Mobile & Smart Devices",
+      subCategories: [
+        "Android Testing Phones",
+        "iOS Testing Phones",
+        "Android Tablets",
+        "iPads",
+        "Smart Watches",
+        "POS Terminals",
+        "Barcode Scanners"
+      ],
       network: true,
-      group: "IT",
+      group: "Hardware",
     },
     {
-      id: "mobile",
-      name: "Mobile",
-      subCategories: ["Smartphone", "Tablet"],
+      id: "office_automation_av",
+      name: "Office Automation & AV Devices",
+      subCategories: [
+        "Heavy-Duty Laser Printers",
+        "Barcode/Label Printers",
+        "Flatbed Scanners",
+        "Conference Room Projectors",
+        "Smart TVs/Displays",
+        "Video Conferencing Systems",
+        "Bluetooth Conference Speakers",
+        "Smart Podiums/Mics",
+        "Digital Signage Displays"
+      ],
       network: true,
-      group: "IT",
+      group: "Hardware",
     },
     {
-      id: "monitor",
-      name: "Monitor",
-      subCategories: ["LCD", "LED", "Curved"],
+      id: "power_electrical",
+      name: "Power & Electrical Assets",
+      subCategories: [
+        "Online Central UPS",
+        "Desktop Small UPS",
+        "UPS Battery Banks",
+        "Inverters",
+        "Server Room Precision ACs",
+        "Office Standard ACs",
+        "Diesel Generator",
+        "Automatic Voltage Stabilizers"
+      ],
       network: false,
-      group: "IT",
+      group: "Hardware",
     },
     {
-      id: "printer",
-      name: "Printer",
-      subCategories: ["Laser", "Inkjet", "MFP"],
-      network: false,
-      group: "IT",
+      id: "security_access_control",
+      name: "Security & Access Control",
+      subCategories: [
+        "CCTV Cameras",
+        "NVR/DVR",
+        "CCTV Hard Drives",
+        "Biometric Machines",
+        "RFID Card Readers",
+        "Electromagnetic Door Locks",
+        "Fire Alarm Panels",
+        "Smoke Detectors",
+        "Digital Safes"
+      ],
+      network: true,
+      group: "Hardware",
     },
     {
-      id: "building",
-      name: "Building",
-      subCategories: ["Office Building", "Warehouse", "Apartment"],
+      id: "core_software_os",
+      name: "Core Software & Operating Systems",
+      subCategories: [
+        "Windows 11 Pro Licenses",
+        "Windows Server Licenses",
+        "Windows Server CALs",
+        "macOS MDM Profiles",
+        "RHEL Subscriptions",
+        "Microsoft 365",
+        "Google Workspace",
+        "Adobe Creative Cloud",
+        "Figma Licenses",
+        "Canva Pro"
+      ],
       network: false,
-      group: "Building",
+      group: "Digital",
     },
     {
-      id: "vehicle",
-      name: "Vehicle",
-      subCategories: ["Car", "Bike", "Truck"],
+      id: "development_tech_software",
+      name: "Development & Tech Software",
+      subCategories: [
+        "GitHub/GitLab Subscriptions",
+        "JetBrains IDE Licenses",
+        "Visual Studio Enterprise",
+        "Postman Enterprise",
+        "Docker Desktop",
+        "Jira/Confluence",
+        "Slack/Discord Premium",
+        "Zoom/Webex"
+      ],
       network: false,
-      group: "Vehicle",
+      group: "Digital",
     },
     {
-      id: "furniture",
-      name: "Furniture",
-      subCategories: ["Desk", "Table", "Cabinet"],
+      id: "hosting_cloud_web",
+      name: "Hosting, Cloud & Web Infrastructure",
+      subCategories: [
+        "AWS Accounts & Instances",
+        "DigitalOcean Droplets",
+        "Render/Heroku",
+        "Plesk/cPanel VPS",
+        "Premium WordPress Themes",
+        "Premium WordPress Plugins",
+        "Database Software Licenses"
+      ],
       network: false,
-      group: "Furniture",
+      group: "Digital",
     },
     {
-      id: "chair",
-      name: "Chair",
-      subCategories: ["Office", "Visitor", "Executive"],
+      id: "digital_certificates_virtual",
+      name: "Digital Certificates & Virtual Property",
+      subCategories: [
+        "Domain Names",
+        "SSL/TLS Certificates",
+        "Static IP Addresses",
+        "Apple Developer Account",
+        "Google Play Console",
+        "Third-Party API Keys"
+      ],
       network: false,
-      group: "Furniture",
+      group: "Digital",
     },
     {
-      id: "long_term_assets",
-      name: "Long Term Assets",
-      subCategories: ["Building", "Machinery", "Land"],
+      id: "security_backup_software",
+      name: "Security & Backup Software",
+      subCategories: [
+        "Antivirus/EDR",
+        "Cloud Backup Subscriptions",
+        "VPN Services",
+        "Password Managers",
+        "Firewall Security Subscriptions"
+      ],
       network: false,
-      group: "Building",
+      group: "Digital",
     },
+    {
+      id: "non_it_facilities",
+      name: "Non-IT Facilities",
+      subCategories: [
+        "Ergonomic Office Chairs",
+        "Developer Desks",
+        "Conference Room Tables",
+        "Cafeteria Machines",
+        "Water Purifiers/RO",
+        "Paper Shredders"
+      ],
+      network: false,
+      group: "Miscellaneous",
+    }
   ],
 };
 
@@ -127,19 +276,15 @@ export function mergeCategoryCatalog(saved) {
       let group = c.group;
       if (!group) {
         if (c.network) {
-          group = "IT";
+          group = "Hardware";
         } else {
           const nameLower = String(c.name).toLowerCase().trim();
           if (IT_CATEGORY_NAMES.includes(nameLower)) {
-            group = "IT";
-          } else if (["building", "office", "property"].includes(nameLower)) {
-            group = "Building";
-          } else if (["furniture", "chair", "desk", "table", "cabinet"].includes(nameLower)) {
-            group = "Furniture";
-          } else if (["vehicle", "car", "bike", "truck"].includes(nameLower)) {
-            group = "Vehicle";
+            group = "Hardware";
+          } else if (["software", "cloud", "digital"].some(keyword => nameLower.includes(keyword))) {
+            group = "Digital";
           } else {
-            group = "General";
+            group = "Miscellaneous";
           }
         }
       }
@@ -161,7 +306,7 @@ export function mergeCategoryCatalog(saved) {
 
   const groups = [...new Set([
     ...savedGroups,
-    ...categories.map((category) => category.group || "General"),
+    ...categories.map((category) => category.group || "Miscellaneous"),
   ])];
 
   if (!categories.length && !groups.length) {
@@ -179,26 +324,20 @@ export function mergeCategoryCatalog(saved) {
  */
 export function getCategoryGroup(categoryName, catalog) {
   const cat = String(categoryName || "").trim();
-  if (!cat) return "General";
+  if (!cat) return "Miscellaneous";
 
   const merged = mergeCategoryCatalog(catalog);
   const entry = merged.categories.find((c) => c.name.toLowerCase() === cat.toLowerCase());
-  if (entry) return entry.group || "General";
+  if (entry) return entry.group || "Miscellaneous";
 
   const catLower = cat.toLowerCase();
   if (IT_CATEGORY_NAMES.includes(catLower)) {
-    return "IT";
+    return "Hardware";
   }
-  if (["building", "office", "property"].includes(catLower)) {
-    return "Building";
+  if (["software", "cloud", "digital"].some(keyword => catLower.includes(keyword))) {
+    return "Digital";
   }
-  if (["furniture", "chair", "desk", "table", "cabinet"].includes(catLower)) {
-    return "Furniture";
-  }
-  if (["vehicle", "car", "bike", "truck"].includes(catLower)) {
-    return "Vehicle";
-  }
-  return "General";
+  return "Miscellaneous";
 }
 
 /**
@@ -230,7 +369,7 @@ export function getSubcategoriesForCategory(category, catalog) {
 export function getAvailableGroups(catalog) {
   const merged = mergeCategoryCatalog(catalog);
   const seen = new Set();
-  const order = ["IT", "Building", "Furniture", "Vehicle", "General"];
+  const order = ["Hardware", "Digital", "Miscellaneous"];
   (merged.groups || []).forEach((group) => {
     if (group) seen.add(group);
   });

@@ -11,6 +11,7 @@ import {
   updateAsset,
 } from "../store/slices/assetSlice";
 import FormUsersInputText from "./common/FormUsersInputText";
+import { getOffices } from "../utils/officeStore";
 import { useToast } from "./toast/toastStore";
 import {
   FORM_TYPES,
@@ -22,6 +23,9 @@ import {
 import "./AddAsset.css";
 
 import { isNetworkAssetCategory, getSubcategoriesForCategory, getCategoryGroup, getAvailableGroups, getCategoriesForGroup } from "../utils/categoryCatalog";
+import Select from "react-select";
+import { FaShieldAlt } from "react-icons/fa";
+import apiInstance from "../apis/apiConfig";
 
 const generateReqId = () => `REQ-${Date.now()}`;
 
@@ -63,6 +67,30 @@ function AddAsset() {
   const [isSavingCodeType, setIsSavingCodeType] = useState(false);
   // Group state for Group → Category → SubCategory flow
   const [selectedGroup, setSelectedGroup] = useState("");
+  const [gpsLocation, setGpsLocation] = useState(null);
+  const [locationStatus, setLocationStatus] = useState("Waiting to capture location...");
+
+  useEffect(() => {
+    if (!isRequestMode && "geolocation" in navigator) {
+      setLocationStatus("Requesting location access...");
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setGpsLocation({
+            latitude: position.coords.latitude,
+            longitude: position.coords.longitude,
+          });
+          setLocationStatus(`Location captured: ${position.coords.latitude.toFixed(5)}, ${position.coords.longitude.toFixed(5)}`);
+        },
+        (error) => {
+          console.warn("Geolocation error:", error);
+          setLocationStatus("Location access denied or unavailable. Saving without location.");
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    } else if (!isRequestMode) {
+      setLocationStatus("Geolocation is not supported by your browser.");
+    }
+  }, [isRequestMode]);
 
   const formatDate = (value) => value?.split("T")[0] || "";
 
@@ -285,6 +313,10 @@ function AddAsset() {
       warrantyReminderDays: Number(data.warrantyReminderDays || 10),
     };
 
+    if (gpsLocation && !isRequestMode) {
+      payload.gpsLocation = gpsLocation;
+    }
+
     if (allCustomFields.length) {
       payload.customFields = allCustomFields.reduce((acc, field) => {
         if (isFieldVisible(field.name)) {
@@ -402,7 +434,7 @@ function AddAsset() {
     city: "e.g., New Delhi",
     state: "e.g., Delhi",
     employeeId: "e.g., EMP-1049",
-    assignedTo: "e.g., John Doe",
+    purchaseDate: "e.g., YYYY-MM-DD",
   };
 
   const checkMandatory = (name) => {
@@ -624,6 +656,30 @@ function AddAsset() {
     // Skip subCategory here — it's rendered together with category above
     if (field.name === "subCategory") {
       return null;
+    }
+
+    if (field.name === "officeName") {
+      const officesList = getOffices();
+      return (
+        <div className="input-wrapper" key={field.name}>
+          <label className="input-label">
+            {fieldLabelMap.officeName || "Office Name"}
+            {isFieldRequired("officeName") && <span className="required">*</span>}
+          </label>
+          <select
+            {...register("officeName")}
+            className={`custom-input ${errors.officeName ? "input-error-border" : ""}`}
+          >
+            <option value="">Select Office</option>
+            {officesList.map((office) => (
+              <option value={office.officeName} key={office.id}>
+                {office.officeName} {office.city ? `(${office.city})` : ""}
+              </option>
+            ))}
+          </select>
+          {errors.officeName && <span className="field-error">{errors.officeName.message}</span>}
+        </div>
+      );
     }
 
     if (requestSelectFields.has(field.name)) {
@@ -881,7 +937,20 @@ function AddAsset() {
 
   return (
     <div className="page-wrapper">
-      <form onSubmit={handleSubmit(onSubmit)}>
+      {!isRequestMode && (
+        <div style={{ padding: "10px 16px", background: "var(--bg-surface)", margin: "0 24px 16px 24px", borderRadius: "8px", border: "1px solid var(--border-color)", display: "flex", alignItems: "center", gap: "8px", fontSize: "14px", color: "var(--text-muted)" }}>
+          <FaShieldAlt style={{ color: gpsLocation ? "var(--color-success)" : "var(--color-warning)" }} />
+          <strong>GPS Tracking:</strong> {locationStatus}
+        </div>
+      )}
+      <form onSubmit={handleSubmit(onSubmit, (errors) => {
+        const firstErrorField = Object.keys(errors)[0];
+        showToast({
+          title: "Validation Error",
+          message: errors[firstErrorField]?.message || "Please check all highlighted fields.",
+          type: "error"
+        });
+      })}>
         <div className="form-content">
           {formSections.map((section, index) => renderConfiguredSection(section, index))}
         </div>

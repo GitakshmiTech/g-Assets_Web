@@ -18,6 +18,11 @@ const checklistSchema = new mongoose.Schema(
 
 const workOrderSchema = new mongoose.Schema(
   {
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      default: null,
+    },
     complaintId: { type: String, unique: true },
     complaintDate: { type: Date, default: Date.now },
     assetId: { type: String },
@@ -35,6 +40,7 @@ const workOrderSchema = new mongoose.Schema(
     invoiceNumber: { type: String, default: "" },
     tasks: [taskSchema],
     checklists: [checklistSchema],
+    incidentImage: { type: String, default: "" },
     expenseIntegration: { type: mongoose.Schema.Types.Mixed, default: {} },
   },
   {

@@ -8,6 +8,7 @@ const fallbackRoles = () =>
     access: (DEFAULT_ROLE_CONFIG[role.value]?.sidebarAccess || []).join(", "),
     sidebarAccess: DEFAULT_ROLE_CONFIG[role.value]?.sidebarAccess || [],
     permissions: DEFAULT_ROLE_CONFIG[role.value]?.permissions || [],
+    isSystem: true,
   }));
 
 export const fetchRoles = async () => {
@@ -16,7 +17,8 @@ export const fetchRoles = async () => {
     const roles = response.data?.roles || [];
     if (!roles.length) return fallbackRoles();
     return roles;
-  } catch {
+  } catch (error) {
+    console.error("fetchRoles failed:", error.message, error.config?.url);
     return fallbackRoles();
   }
 };

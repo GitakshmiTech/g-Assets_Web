@@ -3,6 +3,8 @@ import { DEFAULT_ROLE_PERMISSIONS, DEFAULT_ROLE_SIDEBAR } from "../utils/permiss
 
 export const DEFAULT_ROLES = [
   { key: "SUPER_ADMIN", label: "Super Admin", isSystem: true },
+  { key: "COMPANY_ADMIN", label: "Company Admin", isSystem: true },
+  { key: "BRANCH_ADMIN", label: "Branch Admin", isSystem: true },
   { key: "ADMIN", label: "Admin", isSystem: true },
   { key: "IT_STAFF", label: "IT Staff", isSystem: true },
   { key: "MANAGER", label: "Manager", isSystem: true },
@@ -31,21 +33,31 @@ const Role = mongoose.models.Role || mongoose.model("Role", roleSchema);
 
 export const ensureDefaultRoles = async () => {
   await Promise.all(
-    DEFAULT_ROLES.map((role) =>
-      Role.updateOne(
-        { key: role.key },
-        {
-          $set: {
-            label: role.label,
-            access: role.access,
-            sidebarAccess: role.sidebarAccess,
-            permissions: role.permissions,
-            isSystem: true,
-          },
-        },
-        { upsert: true },
-      ),
-    ),
+    DEFAULT_ROLES.map(async (role) => {
+      const exists = await Role.findOne({ key: role.key });
+      if (!exists) {
+        await Role.create({
+          key: role.key,
+          label: role.label,
+          access: role.access,
+          sidebarAccess: role.sidebarAccess,
+          permissions: role.permissions,
+          isSystem: true,
+        });
+      } else {
+        let updated = false;
+        role.sidebarAccess.forEach((item) => {
+          if (!exists.sidebarAccess.includes(item)) {
+            exists.sidebarAccess.push(item);
+            updated = true;
+          }
+        });
+        if (updated) {
+          exists.access = exists.sidebarAccess.join(", ");
+          await exists.save();
+        }
+      }
+    })
   );
 };
 

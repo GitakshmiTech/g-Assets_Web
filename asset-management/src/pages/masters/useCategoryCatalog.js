@@ -8,7 +8,7 @@ import {
 import { mergeCategoryCatalog } from "../../utils/categoryCatalog";
 import { useToast } from "../../components/toast/toastStore";
 
-const DEFAULT_GROUP_ORDER = ["IT", "Building", "Furniture", "Vehicle", "General"];
+const DEFAULT_GROUP_ORDER = ["Hardware", "Digital", "Miscellaneous"];
 
 function getGroupsFromCategories(categories) {
   const seen = new Set();

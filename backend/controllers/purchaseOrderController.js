@@ -60,7 +60,7 @@ export const createPurchaseOrder = async (req, res) => {
       });
     }
 
-    const newPo = await PurchaseOrder.create({
+    const poPayload = {
       poNumber,
       raisedBy,
       vendor,
@@ -72,7 +72,13 @@ export const createPurchaseOrder = async (req, res) => {
       tax,
       netTotal,
       status: "PO Raised",
-    });
+    };
+
+    if (req.user.role !== "SUPER_ADMIN" && req.user.companyId) {
+      poPayload.companyId = req.user.companyId;
+    }
+
+    const newPo = await PurchaseOrder.create(poPayload);
 
     const vendorSync = await syncVendorToExpense(vendor, { poNumber, source: "purchase_order" });
     newPo.expenseIntegration = { ...(newPo.expenseIntegration || {}), vendorSync };
@@ -98,6 +104,11 @@ export const getAllPurchaseOrders = async (req, res) => {
   try {
     const { status, search } = req.query;
     const query = {};
+
+    if (req.user.role !== "SUPER_ADMIN" && req.user.companyId) {
+      query.companyId = req.user.companyId;
+    }
+
     if (status && status !== "ALL") query.status = status;
     if (search) {
       const searchRegex = new RegExp(search, "i");
@@ -119,6 +130,10 @@ export const getPurchaseOrderById = async (req, res) => {
   try {
     const po = await PurchaseOrder.findById(req.params.id);
     if (!po) return res.status(404).json({ success: false, message: "Purchase Order not found" });
+
+    if (req.user.role !== "SUPER_ADMIN" && req.user.companyId && String(po.companyId) !== String(req.user.companyId)) {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
     res.status(200).json({ success: true, purchaseOrder: po });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -132,8 +147,14 @@ export const updatePurchaseOrderStatus = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid status value" });
     }
 
-    const po = await PurchaseOrder.findByIdAndUpdate(req.params.id, { status }, { new: true });
+    const po = await PurchaseOrder.findById(req.params.id);
     if (!po) return res.status(404).json({ success: false, message: "Purchase Order not found" });
+
+    if (req.user.role !== "SUPER_ADMIN" && req.user.companyId && String(po.companyId) !== String(req.user.companyId)) {
+      return res.status(403).json({ success: false, message: "Access denied" });
+    }
+
+    po.status = status;
 
     let expensePost = null;
     if (["Received", "Partially Received"].includes(status)) {

@@ -13,6 +13,11 @@ const poProductSchema = new mongoose.Schema(
 
 const purchaseOrderSchema = new mongoose.Schema(
   {
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      default: null,
+    },
     poNumber: {
       type: String,
       unique: true,

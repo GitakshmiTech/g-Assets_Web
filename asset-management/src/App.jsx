@@ -217,8 +217,8 @@ function App() {
     (state) => state.assetList,
   );
   const { user } = useSelector((state) => state.auth);
-  const canManageAssets = ["SUPER_ADMIN", "ADMIN", "IT_STAFF"].includes(user?.role);
-  const canDeleteAssets = ["SUPER_ADMIN", "ADMIN"].includes(user?.role);
+  const canManageAssets = ["SUPER_ADMIN", "COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "IT_STAFF"].includes(user?.role);
+  const canDeleteAssets = ["SUPER_ADMIN", "COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN"].includes(user?.role);
 
   useEffect(() => {
     dispatch(fetchAssetList());
@@ -238,7 +238,7 @@ function App() {
       asset.assetName,
       asset.assetCode,
       asset.serialNumber,
-      asset.assignedTo,
+      asset.assignedTo?.name || asset.assignedTo,
       asset.officeName,
       asset.department,
     ]
@@ -297,7 +297,7 @@ function App() {
       asset.assetName,
       asset.assetCode,
       asset.assetStatus,
-      asset.assignedTo,
+      asset.assignedTo?.name || asset.assignedTo,
       asset.officeName,
       asset.department,
       asset.vendor,
@@ -460,7 +460,7 @@ function App() {
                   <tr key={index}>
                     <td>{index + 1}</td>
                     <td>{item.assetName}</td>
-                    <td>{item.assignedTo}</td>
+                    <td>{item.assignedTo?.name || item.assignedTo || "-"}</td>
                     <td>{item.serialNumber}</td>
                     <td>{item.assetCode}</td>
                     <td>

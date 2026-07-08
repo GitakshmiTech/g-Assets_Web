@@ -196,11 +196,7 @@ export function ApprovalsPage() {
   };
 
   // Mock complaints data
-  const mockComplaints = [
-    { id: "Comp-104", complainant: "Meet Patel", issue: "Dell Latitude laptop heating up excessively under load", date: "19-May-26", status: "Awaiting Check" },
-    { id: "Comp-102", complainant: "Neha Sharma", issue: "Samsung monitor screen flickers on HDMI port", date: "14-May-26", status: "Resolved" },
-    { id: "Comp-101", complainant: "Ravi Shah", issue: "Canon Printer Jamming in Admin Area", date: "09-May-26", status: "Resolved" }
-  ];
+  const mockComplaints = [];
 
   const filteredComplaints = mockComplaints.filter((comp) => {
     let matchesStatus = true;
@@ -222,10 +218,7 @@ export function ApprovalsPage() {
   });
 
   // Mock returns data
-  const mockReturns = [
-    { id: "Ret-92", employee: "Ravi Shah", item: "HP EliteDesk Desktop G6", date: "15-May-26", status: "Returned" },
-    { id: "Ret-91", employee: "Priyam", item: "Logitech MX Master Mouse", date: "11-May-26", status: "Awaiting Receipt" }
-  ];
+  const mockReturns = [];
 
   const filteredReturns = mockReturns.filter((ret) => {
     let matchesStatus = true;

@@ -1,11 +1,12 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { useSelector } from "react-redux";
-
+import { useSelector, useDispatch } from "react-redux";
+import { updateUserSession } from "../store/slices/authSlice";
 import AppLayout from "../components/layout/AppLayout";
 import AssetDetails from "../components/AssetDetails";
 import AddAsset from "../components/AddAsset";
 import Assets from "../pages/Assets";
+import MyAssets from "../pages/MyAssets";
 import { Login, Register } from "../pages/Auth";
 import Dashboard from "../pages/Dashboard";
 import Profile from "../pages/Profile";
@@ -26,6 +27,7 @@ import {
   ScanDemo,
   Warranty,
 } from "../pages/WorkflowModules";
+import Tracking from "../pages/Tracking";
 import { Requests } from "../pages/RequestsPage";
 import Procurements from "../pages/Procurements";
 import POSummary from "../pages/POSummary";
@@ -39,16 +41,24 @@ import AddRequestPage from "../pages/AddRequestPage";
 import { canAccessRoute, getRoleHome, normalizeRoleValue } from "../utils/permissions";
 import { fetchRoles } from "../utils/roleApi";
 
+import SuperAdminDashboard from "../modules/superAdmin/dashboard/Dashboard";
+import CompanyList from "../modules/superAdmin/companies/CompanyList";
+import CreateCompany from "../modules/superAdmin/companies/CreateCompany";
+import EditCompany from "../modules/superAdmin/companies/EditCompany";
+import ViewCompany from "../modules/superAdmin/companies/ViewCompany";
+
 function AppRouter() {
   return (
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/scan/:id" element={<AssetDetails />} />
         <Route element={<RequireAuth />}>
           <Route element={<AppLayout />}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/assets" element={<Assets />} />
+          <Route path="/my-assets" element={<MyAssets />} />
           <Route path="/requests" element={<Requests />} />
           <Route path="/approvals" element={<ApprovalsPage />} />
           <Route path="/work-orders" element={<WorkOrdersPage />} />
@@ -69,6 +79,7 @@ function AppRouter() {
           <Route path="/masters/procurement-form" element={<ProcurementFormMaster />} />
           <Route path="/masters/categories" element={<CategoryMaster />} />
           <Route path="/scan-demo" element={<ScanDemo />} />
+          <Route path="/tracking" element={<Tracking />} />
           <Route path="/add-asset" element={<AddAsset />} />
           <Route path="/edit-asset/:id" element={<AddAsset />} />
            <Route path="/add-request" element={<AddRequestPage />} />
@@ -79,7 +90,12 @@ function AppRouter() {
           <Route path="/setup/vendors" element={<VendorsPage />} />
           <Route path="/setup/products" element={<ProductsPage />} />
           <Route path="/setup/preferences" element={<PreferencesPage />} />
-          <Route path="/scan/:id" element={<AssetDetails />} />
+
+          <Route path="/super-admin/dashboard" element={<SuperAdminDashboard />} />
+          <Route path="/super-admin/companies" element={<CompanyList />} />
+          <Route path="/super-admin/companies/create" element={<CreateCompany />} />
+          <Route path="/super-admin/companies/edit/:id" element={<EditCompany />} />
+          <Route path="/super-admin/companies/view/:id" element={<ViewCompany />} />
           </Route>
         </Route>
       </Routes>
@@ -89,8 +105,10 @@ function AppRouter() {
 
 function RequireAuth() {
   const location = useLocation();
+  const dispatch = useDispatch();
   const { user, token } = useSelector((state) => state.auth);
   const [roles, setRoles] = useState([]);
+  const [rolesLoaded, setRolesLoaded] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -98,10 +116,24 @@ function RequireAuth() {
 
     fetchRoles()
       .then((data) => {
-        if (active) setRoles(data);
+        if (active) {
+          setRoles(data);
+          setRolesLoaded(true);
+          
+          if (user && user.role) {
+            const userRoleValue = normalizeRoleValue(user.role);
+            const userRoleData = data.find((item) => item.key === userRoleValue);
+            if (userRoleData && JSON.stringify(user.permissions || []) !== JSON.stringify(userRoleData.permissions || [])) {
+              dispatch(updateUserSession({ ...user, permissions: userRoleData.permissions || [] }));
+            }
+          }
+        }
       })
       .catch(() => {
-        if (active) setRoles([]);
+        if (active) {
+          setRoles([]);
+          setRolesLoaded(true);
+        }
       });
 
     return () => {
@@ -113,6 +145,10 @@ function RequireAuth() {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  if (!rolesLoaded) {
+    return <div style={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>Loading access...</div>;
+  }
+
   // Clear sso_login_success flag as we are successfully authenticated on a protected route
   sessionStorage.removeItem("sso_login_success");
 
@@ -121,7 +157,11 @@ function RequireAuth() {
   const roleAccess = role?.sidebarAccess?.length ? role.sidebarAccess : role?.access || "";
 
   if (!canAccessRoute(userRole, location.pathname, roleAccess, role?.permissions || [])) {
-    return <Navigate to={getRoleHome(userRole, roleAccess)} replace />;
+    const targetHome = getRoleHome(userRole, roleAccess);
+    if (location.pathname === targetHome || location.pathname === "/") {
+      return <Navigate to="/profile" replace />;
+    }
+    return <Navigate to={targetHome} replace />;
   }
 
   return <Outlet />;

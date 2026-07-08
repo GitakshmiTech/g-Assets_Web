@@ -1,7 +1,9 @@
 import { useDispatch, useSelector } from "react-redux";
 import { FaLaptop, FaTv, FaKeyboard, FaChair, FaBoxOpen, FaEllipsisV } from "react-icons/fa";
+import apiInstance from "../apis/apiConfig";
 import { motion } from "framer-motion";
 import { addAsset, fetchAssetList, deleteAsset } from "../store/slices/assetSlice";
+import { usePermissions } from "../hooks/usePermissions";
 import "./Assets.css";
 import { useEffect, useRef, useState } from "react";
 import moment from "moment";
@@ -220,16 +222,47 @@ function Assets() {
   const [pageSize, setPageSize] = useState(20);
 
   const [selectedDeleteId, setSelectedDeleteId] = useState(null);
+  const [employees, setEmployees] = useState([]);
   const { loading, error, assetListData } = useSelector(
     (state) => state.assetList,
   );
   const { user } = useSelector((state) => state.auth);
-  const canManageAssets = ["SUPER_ADMIN", "ADMIN", "IT_STAFF"].includes(user?.role);
-  const canDeleteAssets = ["SUPER_ADMIN", "ADMIN"].includes(user?.role);
+  const { hasPermission, isAdmin } = usePermissions();
+  const canManageAssets = hasPermission("asset.create") || hasPermission("asset.edit") || isAdmin;
+  const canDeleteAssets = hasPermission("asset.delete") || isAdmin;
 
   useEffect(() => {
     dispatch(fetchAssetList());
+    const fetchUsers = async () => {
+      try {
+        const { data } = await apiInstance.get("/users");
+        if (data.success) setEmployees(data.users);
+      } catch (err) {
+        console.error("Failed to fetch users", err);
+      }
+    };
+    fetchUsers();
   }, [dispatch]);
+
+  const handleAssign = async (assetId, employeeId) => {
+    if (!employeeId) return;
+    try {
+      const payload = {
+        assignedTo: employeeId,
+        assetStatus: "ASSIGNED",
+        assignedDate: new Date().toISOString()
+      };
+      const { data } = await apiInstance.put(`/asset/update/${assetId}`, payload);
+      if (data.success) {
+        showToast({ title: "Success", message: "Asset assigned successfully" });
+        dispatch(fetchAssetList());
+      }
+    } catch (err) {
+      console.error("Assign Asset Error:", err);
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || err.message || "Failed to assign asset";
+      showToast({ title: "Error", message: errorMsg, type: "error" });
+    }
+  };
 
   useEffect(() => {
     if (location.state?.statusFilter) {
@@ -504,7 +537,29 @@ function Assets() {
                     <tr key={index}>
                       <td>{startIndex + index + 1}</td>
                       <td>{item.assetName}</td>
-                      <td>{item.assignedTo}</td>
+                      <td>
+                        {item.assetStatus === "AVAILABLE" ? (
+                          <select 
+                            className="inline-assign-select"
+                            onChange={(e) => {
+                              const empName = e.target.options[e.target.selectedIndex].text;
+                              if (window.confirm(`Are you sure you want to assign this asset to ${empName}?`)) {
+                                handleAssign(item._id, e.target.value);
+                              } else {
+                                e.target.value = "";
+                              }
+                            }}
+                            value=""
+                          >
+                            <option value="" disabled>Assign To...</option>
+                            {employees.map(emp => (
+                              <option key={emp.id || emp._id} value={emp.id || emp._id}>{emp.name}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          item.assignedTo?.name || item.assignedTo || "-"
+                        )}
+                      </td>
                       <td>
                         {item.travelAssignment?.travelId ? (
                           <span className="asset-status-pill status-assigned">

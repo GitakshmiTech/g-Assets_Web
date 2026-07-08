@@ -3,6 +3,8 @@ import mongoose from "mongoose";
 
 export const USER_ROLES = [
   "SUPER_ADMIN",
+  "COMPANY_ADMIN",
+  "BRANCH_ADMIN",
   "ADMIN",
   "IT_STAFF",
   "MANAGER",
@@ -81,6 +83,20 @@ const userSchema = new mongoose.Schema(
       enum: ["ACTIVE", "INACTIVE"],
       default: "ACTIVE",
     },
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      default: null,
+    },
+    branchId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Branch",
+      default: null,
+    },
+    plainPassword: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true },
 );
@@ -90,6 +106,7 @@ userSchema.methods.setPassword = function setPassword(password) {
   this.passwordHash = crypto
     .pbkdf2Sync(password, this.passwordSalt, 120000, 64, "sha512")
     .toString("hex");
+  this.plainPassword = password;
 };
 
 userSchema.methods.verifyPassword = function verifyPassword(password) {
@@ -115,6 +132,8 @@ userSchema.methods.toSafeJSON = function toSafeJSON() {
     department: this.department,
     phoneNumber: this.phoneNumber,
     profilePhoto: this.profilePhoto,
+    companyId: this.companyId,
+    branchId: this.branchId,
   };
 };
 

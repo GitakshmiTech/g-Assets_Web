@@ -32,6 +32,7 @@ import { persistReducer, persistStore } from "redux-persist";
 import { setLogoutHandler } from "../apis/apiConfig";
 import assetListReducer from "./slices/assetSlice";
 import authReducer, { logout } from "./slices/authSlice";
+import companyReducer from "../modules/superAdmin/companies/companySlice";
 
 const storage = {
   getItem: (key) => Promise.resolve(localStorage.getItem(key)),
@@ -65,6 +66,7 @@ removePersistedAuth();
 const rootReducer = combineReducers({
   assetList: assetListReducer,
   auth: authReducer,
+  company: companyReducer,
 });
 
 const persistConfig = {

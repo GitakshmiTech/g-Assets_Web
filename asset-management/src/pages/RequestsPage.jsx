@@ -28,12 +28,14 @@ import {
   FaFilter,
   FaPlus,
 } from "react-icons/fa";
+import { usePermissions } from "../hooks/usePermissions";
 import "./RequestsPage.css";
 
 export function Requests() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { showToast } = useToast();
+  const { hasPermission, isAdmin } = usePermissions();
   
   const getInitials = (name) => {
     if (!name || name === "Unknown") return "👤";
@@ -353,26 +355,28 @@ export function Requests() {
           <h2>Requests</h2>
           <p>View and manage all organization asset procurement requests.</p>
         </div>
-        <button
-          type="button"
-          className="dashboard-add-btn "
-          onClick={() => navigate("/add-request")}
-          style={{
-            backgroundColor: "#139686",
-            color: "#ffffff",
-            padding: "8px 16px",
-            borderRadius: "8px",
-            fontWeight: "600",
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            border: "none",
-            cursor: "pointer",
-            boxShadow: "0 2px 4px rgba(37, 99, 235, 0.15)",
-          }}
-        >
-          Add Request
-        </button>
+        {(hasPermission("request.procurement.create") || isAdmin) && (
+          <button
+            type="button"
+            className="dashboard-add-btn "
+            onClick={() => navigate("/add-request")}
+            style={{
+              backgroundColor: "#139686",
+              color: "#ffffff",
+              padding: "8px 16px",
+              borderRadius: "8px",
+              fontWeight: "600",
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              border: "none",
+              cursor: "pointer",
+              boxShadow: "0 2px 4px rgba(37, 99, 235, 0.15)",
+            }}
+          >
+            Add Request
+          </button>
+        )}
       </div>
 
       {/* KPI Cards Grid */}

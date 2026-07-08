@@ -11,7 +11,7 @@ const isComputerAsset = (category, subCategory, formConfig) =>
 
 const getActiveSections = (config) =>
   getAssetFormSections(config).filter((section) =>
-    ["Asset Information", "IP Configuration", "Computer Specifications", "Remarks"].includes(section.key)
+    ["Asset Information", "Lifecycle & Warranty", "IP Configuration", "Computer Specifications", "Remarks"].includes(section.key)
   );
 
 const labelMapFromConfig = (config) =>
@@ -58,13 +58,7 @@ export const createAssetSchema = (formConfig = {}) => {
 
   assetStatus: requiredWhenConfigured(formConfig, "assetStatus", "Asset Status"),
 
-  assignedTo: yup.string().when("assetStatus", {
-    is: (value) =>
-      isVisible(formConfig, "assignedTo") &&
-      (value === "ASSIGNED" || isRequired(formConfig, "assignedTo")),
-    then: (schema) => schema.required(`${labelFor("assignedTo", "Assigned To")} is required`),
-    otherwise: (schema) => schema.notRequired(),
-  }),
+  assignedTo: yup.string().notRequired(),
 
   serialNumber: conditionalRequired("serialNumber", "Serial Number is required for tracking"),
 
@@ -75,6 +69,11 @@ export const createAssetSchema = (formConfig = {}) => {
   vendor: stringField("vendor", "Vendor"),
 
   location: stringField("location", "Location"),
+
+  gpsLocation: yup.object().shape({
+    latitude: yup.number().nullable(),
+    longitude: yup.number().nullable(),
+  }).nullable().notRequired(),
 
   assetType: stringField("assetType", "Asset Type"),
 

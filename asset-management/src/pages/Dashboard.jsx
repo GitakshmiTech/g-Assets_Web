@@ -134,7 +134,7 @@ function Dashboard() {
       serialNumber: asset.serialNumber || "-",
       category: asset.category || "Unassigned",
       assetStatus: asset.assetStatus || "AVAILABLE",
-      assignedTo: asset.assignedTo || "-",
+      assignedTo: asset.assignedTo?.name || asset.assignedTo || "-",
       addedOn: asset.createdAt || asset.purchaseDate,
     }));
 
@@ -423,7 +423,7 @@ function Dashboard() {
                           {formatStatus(row.assetStatus)}
                         </span>
                       </td>
-                      <td>{row.assignedTo}</td>
+                      <td>{row.assignedTo?.name || row.assignedTo || "-"}</td>
                       <td>{formatDate(row.addedOn)}</td>
                       <td>
                         <button

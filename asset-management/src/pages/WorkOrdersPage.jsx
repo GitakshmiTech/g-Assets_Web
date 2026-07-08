@@ -17,40 +17,10 @@ import {
 } from "react-icons/fa";
 import { useSelector } from "react-redux";
 import "./WorkOrdersPage.css";
+import { pushAppNotification } from "../utils/notificationStore";
+import { loadAssetFormConfig } from "../utils/assetFormBuilder";
 
-const ASSIGNEE_OPTIONS = [
-  "Albert Admin",
-  "Thomas John",
-  "Evan Employee",
-  "Mathew Manager",
-  "John Doe",
-  "Alice Developer",
-  "Bob HR"
-];
 
-const CATEGORY_OPTIONS = [
-  "Keyboard Replacement",
-  "OS Reinstallation",
-  "Display Repair",
-  "Battery Replacement",
-  "OS Diagnostics",
-  "Thermal Service",
-  "Motherboard Service",
-  "Button Repair",
-  "GPU Diagnostics",
-  "Input Device Repair",
-  "Hinge Repair",
-  "Audio Repair",
-  "Panel Replacement",
-  "Antivirus Clean",
-  "Camera Service",
-  "SMPS Replacement",
-  "Access Reset",
-  "RAM Upgrade",
-  "Roller Cleaning",
-  "SATA Cable Check",
-  "Office License Act"
-];
 
 const emptyWorkOrderForm = {
   assetId: "",
@@ -70,7 +40,7 @@ function WorkOrdersPage() {
   const [loading, setLoading] = useState(true);
 
   // RBAC Check
-  const canManageWorkOrders = ["SUPER_ADMIN", "ADMIN", "IT_STAFF"].includes(String(user?.role || "").toUpperCase());
+  const canManageWorkOrders = ["SUPER_ADMIN", "COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "IT_STAFF"].includes(String(user?.role || "").toUpperCase());
 
   // Filters & State
   const [activeKpi, setActiveKpi] = useState("All"); // All, Open, Ongoing, Completed
@@ -94,6 +64,20 @@ function WorkOrdersPage() {
   const [status, setStatus] = useState("Open");
   const [tasks, setTasks] = useState([]);
   const [checklists, setChecklists] = useState([]);
+
+  const [categoryOptions, setCategoryOptions] = useState([]);
+
+  // Fetch asset categories catalog to populate work order categories dynamically
+  useEffect(() => {
+    try {
+      const config = loadAssetFormConfig();
+      const categories = config?.__categoryCatalog?.categories || [];
+      const names = categories.map((cat) => cat.name).filter(Boolean);
+      setCategoryOptions(names);
+    } catch (err) {
+      console.error("Failed to load asset categories configuration", err);
+    }
+  }, []);
 
   // Load All Work Orders
   const fetchWorkOrders = async () => {
@@ -318,6 +302,18 @@ function WorkOrdersPage() {
       const response = await apiInstance.put(`/work-orders/${selectedWO._id}`, payload);
       
       if (response.data.success) {
+        // Notify the employee of the status update
+        pushAppNotification({
+          title: `Work Order: ${status}`,
+          message: `Your complaint ${selectedWO.complaintId} on asset ${selectedWO.assetName} is now ${status}.`,
+          type: status === "Completed" ? "success" : "info",
+          meta: {
+            menuLabel: "Employee Portal",
+            route: "/employees",
+            targetUsers: [selectedWO.employeeEmail, selectedWO.raisedByEmail, selectedWO.raisedBy].filter(Boolean)
+          }
+        });
+
         showToast({
           title: "Work Order Updated",
           message: response.data.reimbursementPost
@@ -716,6 +712,13 @@ function WorkOrdersPage() {
                 <div className="complaint-summary-block">
                   <label>Complaint Title/Desc</label>
                   <p>{selectedWO.complaintTitle || "No detailed description provided."}</p>
+                  
+                  {selectedWO.incidentImage && (
+                    <div style={{ marginTop: "16px" }}>
+                      <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", fontSize: "0.85rem", color: "#6b7280" }}>Damage Image</label>
+                      <img src={selectedWO.incidentImage} alt="Incident" style={{ maxWidth: "100%", maxHeight: "300px", borderRadius: "8px", border: "1px solid #e5e7eb" }} />
+                    </div>
+                  )}
                 </div>
 
                 <hr className="drawer-divider" />
@@ -736,17 +739,13 @@ function WorkOrdersPage() {
                   </div>
 
                   <div className="form-group">
-                    <label htmlFor="assignee-select">Assign Technician/Worker</label>
-                    <select
-                      id="assignee-select"
+                    <label htmlFor="assignee-input">Assign Technician/Worker</label>
+                    <input
+                      type="text"
+                      id="assignee-input"
                       value={assignedTo}
                       onChange={(e) => setAssignedTo(e.target.value)}
-                    >
-                      <option value="">Unassigned</option>
-                      {ASSIGNEE_OPTIONS.map((name) => (
-                        <option key={name} value={name}>{name}</option>
-                      ))}
-                    </select>
+                    />
                   </div>
 
                   <div className="form-group">
@@ -757,7 +756,7 @@ function WorkOrdersPage() {
                       onChange={(e) => setWorkOrderSelection(e.target.value)}
                     >
                       <option value="">Select Category</option>
-                      {CATEGORY_OPTIONS.map((cat) => (
+                      {categoryOptions.map((cat) => (
                         <option key={cat} value={cat}>{cat}</option>
                       ))}
                     </select>

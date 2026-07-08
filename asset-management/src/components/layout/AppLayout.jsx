@@ -25,11 +25,16 @@ import {
   FaShoppingCart,
   FaCheckSquare,
   FaWrench,
+  FaMapMarkerAlt,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import { logout } from "../../store/slices/authSlice";
 import { fetchAssetList } from "../../store/slices/assetSlice";
 import { roleHasMenuAccess } from "../../utils/permissions";
 import { fetchRoles } from "../../utils/roleApi";
+import { useToast } from "../../components/toast/toastStore";
+import apiInstance from "../../apis/apiConfig";
+import "../../pages/WorkOrdersPage.css";
 import {
   getNotifications,
   getUnreadNotificationCount,
@@ -40,6 +45,8 @@ import {
   markUserNotificationsRead,
   subscribeNotifications,
   syncAssetNotifications,
+  pushAppNotification,
+  syncWorkOrderNotifications,
 } from "../../utils/notificationStore";
 import { TopbarActionsProvider, useTopbarActions } from "./topbarActionsContext";
 import brandLogo from "../../images/logo.jpeg";
@@ -47,22 +54,34 @@ import "./AppLayout.css";
 
 const navItems = [
   {
+    to: "/super-admin/dashboard",
+    label: "SA Dashboard",
+    icon: <FaHome />,
+    menuRoles: ["SUPER_ADMIN"],
+  },
+  {
+    to: "/super-admin/companies",
+    label: "Companies",
+    icon: <FaBuilding />,
+    menuRoles: ["SUPER_ADMIN"],
+  },
+  {
     to: "/",
     label: "Dashboard",
     icon: <FaHome />,
-    menuRoles: ["SUPER_ADMIN", "ADMIN"],
+    menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "MANAGER"],
   },
   {
     to: "/assets",
     label: "Assets",
     icon: <FaLaptop />,
-    menuRoles: ["SUPER_ADMIN", "ADMIN", "IT_STAFF"],
+    menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "IT_STAFF"],
   },
   {
     key: "masters",
     label: "Masters",
     icon: <FaEdit />,
-    menuRoles: ["SUPER_ADMIN", "ADMIN", "IT_STAFF"],
+    menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "IT_STAFF"],
     children: [
       { to: "/masters/asset-form", label: "Asset Form", icon: <FaLaptop /> },
       {
@@ -82,38 +101,44 @@ const navItems = [
     to: "/scan-demo",
     label: "QR Console",
     icon: <FaQrcode />,
-    menuRoles: ["SUPER_ADMIN", "ADMIN", "IT_STAFF"],
+    menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "IT_STAFF"],
+  },
+  {
+    to: "/tracking",
+    label: "Tracking",
+    icon: <FaMapMarkerAlt />,
+    menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN"],
   },
   {
     to: "/requests",
     label: "Requests",
     icon: <FaClipboardCheck />,
-    menuRoles: ["SUPER_ADMIN", "ADMIN", "IT_STAFF"],
+    menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "IT_STAFF", "MANAGER"],
   },
   {
     to: "/approvals",
     label: "Approvals",
     icon: <FaCheckSquare />,
-    menuRoles: ["SUPER_ADMIN", "ADMIN", "MANAGER"],
+    menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "MANAGER"],
   },
   {
     to: "/procurements",
     label: "Procurements",
     icon: <FaShoppingCart />,
-    menuRoles: ["SUPER_ADMIN", "ADMIN", "IT_STAFF"],
+    menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "IT_STAFF"],
   },
   { to: "/inventory", label: "Inventory", icon: <FaBoxes />, menuRoles: [] },
   {
     to: "/work-orders",
     label: "Work Orders",
     icon: <FaWrench />,
-    menuRoles: ["SUPER_ADMIN", "ADMIN", "IT_STAFF"],
+    menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "IT_STAFF"],
   },
   {
     to: "/employees",
     label: "Employee Portal",
     icon: <FaUserFriends />,
-    menuRoles: ["SUPER_ADMIN", "EMPLOYEE"],
+    menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "EMPLOYEE"],
   },
   {
     to: "/assignments",
@@ -128,35 +153,41 @@ const navItems = [
     menuRoles: [],
   },
   { to: "/warranty", label: "Warranty", icon: <FaBell />, menuRoles: [] },
+  {
+    to: "/my-assets",
+    label: "My Assets",
+    icon: <FaLaptop />,
+    menuRoles: ["EMPLOYEE", "IT_STAFF", "MANAGER", "ADMIN", "COMPANY_ADMIN"],
+  },
   { to: "/offices", label: "Offices", icon: <FaBuilding />, menuRoles: [] },
   {
     to: "/audit",
     label: "Audit Session",
     icon: <FaQrcode />,
-    menuRoles: ["SUPER_ADMIN", "AUDITOR"],
+    menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "AUDITOR"],
   },
   {
     to: "/reports",
     label: "Reports",
     icon: <FaChartBar />,
-    menuRoles: ["SUPER_ADMIN", "ADMIN"],
+    menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN"],
   },
   {
     to: "/roles",
     label: "Users & Access",
     icon: <FaShieldAlt />,
-    menuRoles: ["SUPER_ADMIN"],
+    menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "SUPER_ADMIN"],
   },
   {
     key: "setup",
     label: "Setup",
     icon: <FaTools />,
-    menuRoles: ["SUPER_ADMIN", "ADMIN", "IT_STAFF", "MANAGER", "AUDITOR"],
+    menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "IT_STAFF", "MANAGER", "AUDITOR", "SUPER_ADMIN"],
     children: [
-      { to: "/setup/users", label: "Users", icon: <FaUser />, menuRoles: ["SUPER_ADMIN", "ADMIN"] },
-      { to: "/setup/vendors", label: "Vendors", icon: <FaBuilding />, menuRoles: ["SUPER_ADMIN", "ADMIN", "IT_STAFF"] },
-      { to: "/setup/products", label: "Products", icon: <FaBoxes />, menuRoles: ["SUPER_ADMIN", "ADMIN", "IT_STAFF", "MANAGER", "AUDITOR"] },
-      { to: "/setup/preferences", label: "Preferences", icon: <FaWrench />, menuRoles: ["SUPER_ADMIN", "ADMIN"] },
+      { to: "/setup/users", label: "Users", icon: <FaUser />, menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "SUPER_ADMIN"] },
+      { to: "/setup/vendors", label: "Vendors", icon: <FaBuilding />, menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "IT_STAFF", "SUPER_ADMIN"] },
+      { to: "/setup/products", label: "Products", icon: <FaBoxes />, menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "IT_STAFF", "MANAGER", "AUDITOR", "SUPER_ADMIN"] },
+      { to: "/setup/preferences", label: "Preferences", icon: <FaWrench />, menuRoles: ["COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "SUPER_ADMIN"] },
     ],
   },
 ];
@@ -200,6 +231,81 @@ function AppLayout() {
   const dispatch = useDispatch();
   const { user } = useSelector((state) => state.auth);
   const { assetListData } = useSelector((state) => state.assetList);
+  const { showToast } = useToast();
+  const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [reportForm, setReportForm] = useState({
+    assetId: "",
+    assetName: "",
+    complaintTitle: "",
+    incidentImage: "",
+  });
+
+  const visibleAssets = user?.role === "EMPLOYEE"
+    ? assetListData.filter((asset) => {
+        const assignedId = asset.assignedTo?._id || asset.assignedTo?.id || asset.assignedTo;
+        const matchesId = assignedId && String(assignedId) === String(user._id || user.id);
+        const matchesEmpId = user.employeeId && asset.employeeId && String(asset.employeeId).toLowerCase() === String(user.employeeId).toLowerCase();
+        const matchesName = asset.assignedTo?.name && String(asset.assignedTo.name).toLowerCase() === String(user.name).toLowerCase();
+        return matchesId || matchesEmpId || matchesName;
+      })
+    : assetListData;
+
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setReportForm({ ...reportForm, incidentImage: reader.result });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleReportSubmit = async (e) => {
+    e.preventDefault();
+    if (!reportForm.assetId || !reportForm.complaintTitle) {
+      return showToast({ title: "Error", message: "Asset and Issue Description are required.", type: "error" });
+    }
+    
+    setIsSubmitting(true);
+    try {
+      const response = await apiInstance.post("/work-orders", {
+        assetId: reportForm.assetId,
+        assetName: reportForm.assetName,
+        complaintType: "Damage Report",
+        complaintTitle: reportForm.complaintTitle,
+        priority: "High",
+        raisedBy: user.name,
+        raisedByEmail: user.email,
+        employeeEmail: user.email,
+        incidentImage: reportForm.incidentImage,
+      });
+      
+      if (response.data.success) {
+        pushAppNotification({
+          title: "New Damage Report Submitted",
+          message: `Employee ${user.name} reported damage on asset: ${reportForm.assetName || "Unknown"}.`,
+          type: "info",
+          meta: {
+            menuLabel: "Work Orders",
+            route: "/work-orders",
+            targetRoles: ["SUPER_ADMIN", "COMPANY_ADMIN", "ADMIN", "IT_STAFF"],
+          }
+        });
+
+        showToast({ title: "Report Submitted", message: "Your issue has been reported successfully.", type: "success" });
+        setIsReportModalOpen(false);
+        setReportForm({ assetId: "", assetName: "", complaintTitle: "", incidentImage: "" });
+        dispatch(fetchAssetList());
+      }
+    } catch (error) {
+      showToast({ title: "Error", message: error.response?.data?.message || "Failed to submit report.", type: "error" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -243,6 +349,29 @@ function AppLayout() {
       syncAssetNotifications(assetListData, user);
     }
   }, [assetListData, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const canManageWorkOrders = ["SUPER_ADMIN", "COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "IT_STAFF"].includes(String(user.role || "").toUpperCase());
+    if (!canManageWorkOrders) return;
+
+    const fetchAndSyncWorkOrders = async () => {
+      try {
+        const response = await apiInstance.get("/work-orders");
+        if (response.data.success) {
+          syncWorkOrderNotifications(response.data.workOrders || [], user);
+        }
+      } catch (err) {
+        console.error("Failed to fetch work orders for notifications:", err);
+      }
+    };
+
+    fetchAndSyncWorkOrders();
+    const interval = setInterval(fetchAndSyncWorkOrders, 15000);
+
+    return () => clearInterval(interval);
+  }, [user, location.pathname]);
+
 
   useEffect(() => {
     if (!user) return;
@@ -361,9 +490,7 @@ function AppLayout() {
 
   const logoutUser = () => {
     dispatch(logout());
-    const ssoLogoutUrl = "http://localhost:5004/api/auth/logout";
-    const redirectUri = `${window.location.origin}/login`;
-    window.location.href = `${ssoLogoutUrl}?redirect=${encodeURIComponent(redirectUri)}`;
+    navigate("/login");
   };
 
   const getInitials = (name) => {
@@ -497,6 +624,8 @@ function AppLayout() {
               );
             }
 
+
+
             return (
               <NavLink
                 key={item.to}
@@ -538,72 +667,79 @@ function AppLayout() {
                 <button type="button" className="save-master-btn" onClick={topbarActions.onSave}>Save</button>
               </div>
             )}
-            <div className="notification-dropdown-container" ref={notifRef}>
-              <button
-                type="button"
-                className={`notification-btn ${isNotifOpen ? "active" : ""}`}
-                aria-label={`Notifications (${unreadCount} unread)`}
-                aria-expanded={isNotifOpen}
-                onClick={toggleNotifications}
-              >
-                <FaBell />
-                {unreadCount > 0 ? (
-                  <em className="notification-badge">
-                    {unreadCount > 99 ? "99+" : unreadCount}
-                  </em>
-                ) : null}
-              </button>
-              {isNotifOpen && (
-                <div className="notification-dropdown-menu">
-                  <div className="notification-dropdown-head">
-                    <div>
-                      <strong>Notifications</strong>
-                      <span>{unreadCount} unread / {notifications.length} total</span>
-                    </div>
-                    {unreadCount > 0 ? (
-                      <button
-                        type="button"
-                        className="notification-mark-read-btn"
-                        onClick={markAllCurrentNotificationsRead}
-                      >
-                        Mark all read
-                      </button>
-                    ) : null}
-                  </div>
-                  {notifications.length ? (
-                    <ul className="notification-list">
-                      {notifications.slice(0, 12).map((item) => (
-                        <li
-                          key={item.id}
-                          className={`notification-item notification-item--${item.type || "info"} ${isNotificationUnread(item, user) ? "unread" : ""}`}
-                          onClick={() => openNotification(item)}
-                          onKeyDown={(event) => {
-                            if (event.key === "Enter" || event.key === " ") {
-                              event.preventDefault();
-                              openNotification(item);
-                            }
-                          }}
-                          role="button"
-                          tabIndex={0}
+            {user?.role !== "SUPER_ADMIN" && (
+              <div className="notification-dropdown-container" ref={notifRef}>
+                <button
+                  type="button"
+                  className={`notification-btn ${isNotifOpen ? "active" : ""}`}
+                  aria-label={`Notifications (${unreadCount} unread)`}
+                  aria-expanded={isNotifOpen}
+                  onClick={toggleNotifications}
+                >
+                  <FaBell />
+                  {unreadCount > 0 ? (
+                    <em className="notification-badge">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </em>
+                  ) : null}
+                </button>
+                {isNotifOpen && (
+                  <div className="notification-dropdown-menu">
+                    <div className="notification-dropdown-head">
+                      <div>
+                        <strong>Notifications</strong>
+                        <span>{unreadCount} unread / {notifications.length} total</span>
+                      </div>
+                      {unreadCount > 0 ? (
+                        <button
+                          type="button"
+                          className="notification-mark-read-btn"
+                          onClick={markAllCurrentNotificationsRead}
                         >
-                          <div className="notification-item-title-row">
-                            <strong>{item.title}</strong>
-                            {item.meta?.menuLabel ? (
-                              <span>{item.meta.menuLabel}</span>
-                            ) : null}
-                          </div>
-                          <p>{item.message}</p>
-                          <time>
-                            {new Date(item.createdAt).toLocaleString("en-IN")}
-                          </time>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <p className="notification-empty">No notifications yet.</p>
-                  )}
-                </div>
-              )}
+                          Mark all read
+                        </button>
+                      ) : null}
+                    </div>
+                    {notifications.length ? (
+                      <ul className="notification-list">
+                        {notifications.slice(0, 12).map((item) => (
+                          <li
+                            key={item.id}
+                            className={`notification-item notification-item--${item.type || "info"} ${isNotificationUnread(item, user) ? "unread" : ""}`}
+                            onClick={() => openNotification(item)}
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter" || event.key === " ") {
+                                event.preventDefault();
+                                openNotification(item);
+                              }
+                            }}
+                            role="button"
+                            tabIndex={0}
+                          >
+                            <div className="notification-item-title-row">
+                              <strong>{item.title}</strong>
+                              {item.meta?.menuLabel ? (
+                                <span>{item.meta.menuLabel}</span>
+                              ) : null}
+                            </div>
+                            <p>{item.message}</p>
+                            <time>
+                              {new Date(item.createdAt).toLocaleString("en-IN")}
+                            </time>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="notification-empty">No notifications yet.</p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+
+            <div className="topbar-user-name" style={{ fontWeight: 600, fontSize: "14px", color: "var(--text-main)", margin: "0 8px" }}>
+              {user?.name || user?.username || "User"}
             </div>
 
             <div className="profile-dropdown-container" ref={dropdownRef}>
@@ -650,6 +786,69 @@ function AppLayout() {
         >
           <Outlet />
         </main>
+        {isReportModalOpen && (
+          <div className="drawer-overlay" onClick={() => setIsReportModalOpen(false)}>
+            <div className="review-drawer drawer-narrow" onClick={(e) => e.stopPropagation()}>
+              <div className="drawer-header">
+                <div className="header-title-block">
+                  <span className="drawer-badge">New</span>
+                  <h2>Report Asset Damage</h2>
+                </div>
+                <button
+                  type="button"
+                  className="close-drawer-btn"
+                  onClick={() => setIsReportModalOpen(false)}
+                >
+                  <FaTimes />
+                </button>
+              </div>
+              <form onSubmit={handleReportSubmit} className="drawer-form">
+                <div className="drawer-body">
+                  <div className="form-group">
+                    <label>Select Asset</label>
+                    <select 
+                      value={reportForm.assetId}
+                      onChange={(e) => {
+                        const selected = visibleAssets.find(a => a._id === e.target.value);
+                        setReportForm({ ...reportForm, assetId: e.target.value, assetName: selected?.assetName || "" });
+                      }}
+                      required
+                    >
+                      <option value="">-- Select an asset --</option>
+                      {visibleAssets.map(asset => (
+                        <option key={asset._id} value={asset._id}>{asset.assetName} ({asset.assetCode || asset.assetId || ""})</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>Issue Description</label>
+                    <textarea 
+                      placeholder="Describe what happened..."
+                      value={reportForm.complaintTitle}
+                      onChange={(e) => setReportForm({ ...reportForm, complaintTitle: e.target.value })}
+                      required
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Upload Image (Optional)</label>
+                    <input type="file" accept="image/*" onChange={handleImageUpload} className="file-input" />
+                    {reportForm.incidentImage && (
+                      <div className="drawer-image-preview-container">
+                        <img src={reportForm.incidentImage} alt="Preview" className="drawer-image-preview" />
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="drawer-footer">
+                  <button type="button" className="drawer-cancel-btn" onClick={() => setIsReportModalOpen(false)}>Cancel</button>
+                  <button type="submit" className="drawer-submit-btn" disabled={isSubmitting}>
+                    {isSubmitting ? "Submitting..." : "Submit Report"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

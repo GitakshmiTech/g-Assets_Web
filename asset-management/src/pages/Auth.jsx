@@ -6,7 +6,7 @@ import { getRoleHome, ROLE_OPTIONS } from "../utils/permissions";
 import { fetchRoles, rolesToOptions } from "../utils/roleApi";
 import { useToast } from "../components/toast/toastStore";
 import { motion } from "framer-motion";
-import { Smartphone, CheckCircle, AlertTriangle, X, AlertCircle } from "lucide-react";
+import { Smartphone, CheckCircle, AlertTriangle, X, AlertCircle, Eye, EyeOff } from "lucide-react";
 import axios from "axios";
 import "./Auth.css";
 
@@ -42,7 +42,8 @@ export function Login() {
   const { showToast } = useToast();
   const { loading, error } = useSelector((state) => state.auth);
   const [form, setForm] = useState({ email: "", password: "" });
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState({ email: "", password: "" });
+  const [showPassword, setShowPassword] = useState(false);
   const initialParams = new URLSearchParams(window.location.search);
   const initialCode = initialParams.get('code');
   const [ssoLoggingIn, setSsoLoggingIn] = useState(Boolean(initialCode && activeSsoPromises[initialCode]));
@@ -280,15 +281,23 @@ export function Login() {
         {errors.email && <span className="field-error">{errors.email}</span>}
 
         <label>Password</label>
-        <input
-          type="password"
-          value={form.password}
-          onChange={(e) => {
-            setForm({ ...form, password: e.target.value });
-            if (errors.password) setErrors({ ...errors, password: "" });
-          }}
-          className={errors.password ? "input-error-border" : ""}
-        />
+        <div style={{ position: "relative" }}>
+          <input
+            type={showPassword ? "text" : "password"}
+            value={form.password}
+            onChange={(e) => {
+              setForm({ ...form, password: e.target.value });
+              if (errors.password) setErrors({ ...errors, password: "" });
+            }}
+            className={errors.password ? "input-error-border" : ""}
+          />
+          <div 
+            onClick={() => setShowPassword(!showPassword)}
+            style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#6c757d", display: "flex", alignItems: "center" }}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </div>
+        </div>
         {errors.password && <span className="field-error">{errors.password}</span>}
 
         {error && <p className="auth-error">{error}</p>}
@@ -615,6 +624,8 @@ export function Register() {
     confirmPassword: "",
   });
   const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     fetchRoles().then((roles) => {
@@ -728,38 +739,50 @@ export function Register() {
           </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <label>Role</label>
-          <select value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })}>
-            {roleOptions.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}
-          </select>
-        </div>
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <label>Password</label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={(e) => {
-                setForm({ ...form, password: e.target.value });
-                if (errors.password) setErrors({ ...errors, password: "" });
-              }}
-              className={errors.password ? "input-error-border" : ""}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={(e) => {
+                  setForm({ ...form, password: e.target.value });
+                  if (errors.password) setErrors({ ...errors, password: "" });
+                }}
+                className={errors.password ? "input-error-border" : ""}
+                style={{ width: "100%" }}
+              />
+              <div 
+                onClick={() => setShowPassword(!showPassword)}
+                style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#6c757d", display: "flex", alignItems: "center" }}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </div>
+            </div>
             {errors.password && <span className="field-error">{errors.password}</span>}
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
             <label>Confirm Password</label>
-            <input
-              type="password"
-              value={form.confirmPassword}
-              onChange={(e) => {
-                setForm({ ...form, confirmPassword: e.target.value });
-                if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: "" });
-              }}
-              className={errors.confirmPassword ? "input-error-border" : ""}
-            />
+            <div style={{ position: "relative" }}>
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                value={form.confirmPassword}
+                onChange={(e) => {
+                  setForm({ ...form, confirmPassword: e.target.value });
+                  if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: "" });
+                }}
+                className={errors.confirmPassword ? "input-error-border" : ""}
+                style={{ width: "100%" }}
+              />
+              <div 
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={{ position: "absolute", right: "12px", top: "50%", transform: "translateY(-50%)", cursor: "pointer", color: "#6c757d", display: "flex", alignItems: "center" }}
+              >
+                {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </div>
+            </div>
             {errors.confirmPassword && <span className="field-error">{errors.confirmPassword}</span>}
           </div>
         </div>

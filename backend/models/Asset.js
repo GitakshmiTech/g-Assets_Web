@@ -82,6 +82,11 @@ const auditLogSchema = new mongoose.Schema(
 
 const assetSchema = new mongoose.Schema(
   {
+    companyId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Company",
+      default: null,
+    },
     // Asset Information
     assetName: {
       type: String,
@@ -112,7 +117,9 @@ const assetSchema = new mongoose.Schema(
     },
 
     assignedTo: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
     },
 
     serialNumber: {
@@ -141,6 +148,12 @@ const assetSchema = new mongoose.Schema(
 
     // Computer specifications for laptop/PC categories
     operatingSystem: String,
+    
+    // GPS Tracking coordinates
+    gpsLocation: {
+      latitude: { type: Number, default: null },
+      longitude: { type: Number, default: null }
+    },
     processor: String,
     ram: String,
     storage: String,

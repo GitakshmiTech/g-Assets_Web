@@ -13,8 +13,17 @@ import {
   seedWorkflowDemoData,
   updateAsset,
 } from "../controllers/assetController.js";
+import { getSuperAdminDashboard as getDashboardStats } from "../controllers/superAdminController.js";
+import {
+  createCompany,
+  deleteCompany,
+  getCompanyById as getCompany,
+  listCompanies,
+  updateCompany,
+} from "../controllers/companyController.js";
 import { currentUser, login, register, updateProfile, ssoLogin, mfaVerify, getSsoStatus } from "../controllers/authController.js";
 import { createRole, deleteRole, listRoles, updateRole } from "../controllers/roleController.js";
+import { getUsers, createUser, updateUser, deleteUser } from "../controllers/userController.js";
 import {
   createPurchaseOrder,
   getAllPurchaseOrders,
@@ -34,7 +43,7 @@ import {
   postDepreciationForAssets,
 } from "../controllers/integrationController.js";
 import { authenticateIntegration } from "../middlewares/integrationMiddleware.js";
-import { allowPermissions, authenticate } from "../middlewares/authMiddleware.js";
+import { allowPermissions, authenticate, allowRoles } from "../middlewares/authMiddleware.js";
 import { PERMISSIONS } from "../utils/permissionCatalog.js";
 
 const router = express.Router();
@@ -43,6 +52,12 @@ router.get("/roles", listRoles);
 router.post("/roles", authenticate, allowPermissions(PERMISSIONS.USER_MANAGE), createRole);
 router.put("/roles/:key", authenticate, allowPermissions(PERMISSIONS.USER_MANAGE), updateRole);
 router.delete("/roles/:key", authenticate, allowPermissions(PERMISSIONS.USER_MANAGE), deleteRole);
+
+router.get("/users", authenticate, allowPermissions(PERMISSIONS.USER_MANAGE), getUsers);
+router.post("/users", authenticate, allowPermissions(PERMISSIONS.USER_MANAGE), createUser);
+router.put("/users/:id", authenticate, allowPermissions(PERMISSIONS.USER_MANAGE), updateUser);
+router.delete("/users/:id", authenticate, allowPermissions(PERMISSIONS.USER_MANAGE), deleteUser);
+
 router.post("/auth/register", register);
 router.post("/auth/login", login);
 router.post("/auth/sso-login", ssoLogin);
@@ -82,7 +97,15 @@ router.get("/invoices", authenticate, allowPermissions(PERMISSIONS.PROCUREMENT_M
 // Work Order Routes
 router.get("/work-orders", authenticate, allowPermissions(PERMISSIONS.WORK_ORDERS_MANAGE), getAllWorkOrders);
 router.get("/work-orders/:id", authenticate, allowPermissions(PERMISSIONS.WORK_ORDERS_MANAGE), getWorkOrderById);
-router.post("/work-orders", authenticate, allowPermissions(PERMISSIONS.WORK_ORDERS_MANAGE), createWorkOrder);
+router.post("/work-orders", authenticate, allowPermissions(PERMISSIONS.WORK_ORDERS_MANAGE, PERMISSIONS.EMPLOYEE_PORTAL), createWorkOrder);
 router.put("/work-orders/:id", authenticate, allowPermissions(PERMISSIONS.WORK_ORDERS_MANAGE), updateWorkOrder);
+
+// Super Admin Routes
+router.get("/super-admin/dashboard", authenticate, allowRoles("SUPER_ADMIN"), getDashboardStats);
+router.get("/super-admin/company", authenticate, allowRoles("SUPER_ADMIN"), listCompanies);
+router.post("/super-admin/company", authenticate, allowRoles("SUPER_ADMIN"), createCompany);
+router.get("/super-admin/company/:id", authenticate, allowRoles("SUPER_ADMIN"), getCompany);
+router.put("/super-admin/company/:id", authenticate, allowRoles("SUPER_ADMIN"), updateCompany);
+router.delete("/super-admin/company/:id", authenticate, allowRoles("SUPER_ADMIN"), deleteCompany);
 
 export default router;

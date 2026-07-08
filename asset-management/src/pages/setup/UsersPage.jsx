@@ -1,44 +1,73 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageTitle, KpiGrid, DataTable } from "../../components/common/ModuleComponents";
-import { FaUserPlus, FaSearch, FaUserShield, FaEnvelope, FaCheckCircle, FaTimesCircle, FaCalendarAlt } from "react-icons/fa";
+import { FaUserPlus, FaSearch, FaUserShield, FaEnvelope, FaCheckCircle, FaTimesCircle, FaCalendarAlt, FaTrash, FaEdit } from "react-icons/fa";
+import apiInstance from "../../apis/apiConfig";
+import { fetchRoles } from "../../utils/roleApi";
+import { usePermissions } from "../../hooks/usePermissions";
 
 export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("ALL");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
   const [focusedField, setFocusedField] = useState("");
+  const { hasPermission, isAdmin } = usePermissions();
 
   // Mock list of initial users
-  const [users, setUsers] = useState([
-    { id: 1, name: "Lucas Samuel", email: "lucas.samuel@assetpro.com", role: "ADMIN", status: "Active", lastActive: "May 22, 2026", department: "IT & Infrastructure" },
-    { id: 2, name: "Amit Patel", email: "amit.patel@assetpro.com", role: "IT_STAFF", status: "Active", lastActive: "May 21, 2026", department: "IT Helpdesk" },
-    { id: 3, name: "Jessica Wong", email: "jessica.w@assetpro.com", role: "MANAGER", status: "Active", lastActive: "May 20, 2026", department: "Operations" },
-    { id: 4, name: "Rajesh Kumar", email: "rajesh.k@assetpro.com", role: "AUDITOR", status: "Active", lastActive: "May 18, 2026", department: "Finance & Audit" },
-    { id: 5, name: "Priya Sharma", email: "priya.s@assetpro.com", role: "EMPLOYEE", status: "Active", lastActive: "May 22, 2026", department: "Human Resources" },
-    { id: 6, name: "Devendra Singh", email: "devendra.s@assetpro.com", role: "EMPLOYEE", status: "Inactive", lastActive: "April 15, 2026", department: "Engineering" },
-  ]);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [availableRoles, setAvailableRoles] = useState([]);
 
-  // Form State for Adding New User
+  // Form State for Adding/Editing New User
   const [formData, setFormData] = useState({
     name: "",
     email: "",
+    password: "",
+    employeeId: "",
     role: "EMPLOYEE",
-    status: "Active",
+    status: "ACTIVE",
     department: ""
   });
   const [formError, setFormError] = useState("");
   const [toastMessage, setToastMessage] = useState("");
+
+  const loadRoles = async () => {
+    try {
+      const data = await fetchRoles();
+      setAvailableRoles(data);
+    } catch (error) {
+      console.error("Failed to load roles", error);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const { data } = await apiInstance.get("/users");
+      if (data.success) setUsers(data.users);
+    } catch (err) {
+      setToastMessage(err.response?.data?.message || err.message || "Failed to load users");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+    loadRoles();
+  }, []);
+
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddUser = (e) => {
+  const handleAddUser = async (e) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.email.trim() || !formData.department.trim()) {
-      setFormError("Please fill in all fields.");
+    if (!formData.name.trim() || !formData.email.trim() || !formData.department.trim() || !formData.password) {
+      setFormError("Please fill in all required fields.");
       return;
     }
 
@@ -47,30 +76,88 @@ export default function UsersPage() {
       return;
     }
 
-    const newUser = {
-      id: users.length + 1,
-      name: formData.name,
-      email: formData.email,
-      role: formData.role,
-      status: formData.status,
-      lastActive: "Just now",
-      department: formData.department
-    };
+    try {
+      if (editingUserId) {
+        // Edit mode
+        const payload = { ...formData };
+        if (!payload.password) delete payload.password; // Don't send empty password if editing
+        const { data } = await apiInstance.put(`/users/${editingUserId}`, payload);
+        if (data.success) {
+          setUsers(users.map(u => u.id === editingUserId ? data.user : u));
+          setShowAddModal(false);
+          setEditingUserId(null);
+          setFormData({ name: "", email: "", password: "", employeeId: "", role: "EMPLOYEE", status: "ACTIVE", department: "" });
+          setFormError("");
+          setToastMessage(`User ${data.user.name} updated successfully!`);
+          setTimeout(() => setToastMessage(""), 3000);
+        } else {
+          setFormError(data.message || "Error updating user");
+        }
+      } else {
+        // Create mode
+        const { data } = await apiInstance.post("/users", formData);
+        if (data.success) {
+          setUsers([data.user, ...users]);
+          setShowAddModal(false);
+          setFormData({ name: "", email: "", password: "", employeeId: "", role: "EMPLOYEE", status: "ACTIVE", department: "" });
+          setFormError("");
+          setToastMessage(`User ${data.user.name} created successfully!`);
+          setTimeout(() => setToastMessage(""), 3000);
+        } else {
+          setFormError(data.message || "Error creating user");
+        }
+      }
+    } catch (err) {
+      setFormError(err.response?.data?.message || err.message || "Failed to process user");
+    }
+  };
 
-    setUsers((prev) => [newUser, ...prev]);
-    setShowAddModal(false);
-    setFormData({ name: "", email: "", role: "EMPLOYEE", status: "Active", department: "" });
-    setFormError("");
-    
-    // Show toast message
-    setToastMessage(`User ${newUser.name} created successfully!`);
-    setTimeout(() => setToastMessage(""), 3000);
+  const handleEditUser = (user) => {
+    setEditingUserId(user.id);
+    setFormData({
+      name: user.name,
+      email: user.email,
+      password: "", // Empty so they don't have to change it
+      employeeId: user.employeeId || "",
+      role: user.role,
+      status: user.status,
+      department: user.department || ""
+    });
+    setShowAddModal(true);
+  };
+
+  const handleDeleteUser = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this user?")) return;
+    try {
+      const { data } = await apiInstance.delete(`/users/${id}`);
+      if (data.success) {
+        setUsers(users.filter(u => u.id !== id));
+        setToastMessage("User deleted successfully!");
+        setTimeout(() => setToastMessage(""), 3000);
+      } else {
+        alert(data.message || "Failed to delete user");
+      }
+    } catch (err) {
+      alert(err.response?.data?.message || err.message || "Error deleting user");
+    }
+  };
+
+  const toggleStatus = async (id, currentStatus) => {
+    const newStatus = currentStatus === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+    try {
+      const { data } = await apiInstance.put(`/users/${id}`, { status: newStatus });
+      if (data.success) {
+        setUsers(users.map(u => u.id === id ? { ...u, status: newStatus } : u));
+      }
+    } catch (err) {
+      console.error("Failed to toggle status", err);
+    }
   };
 
   // KPI items
   const totalUsers = users.length;
-  const activeUsers = users.filter((u) => u.status === "Active").length;
-  const admins = users.filter((u) => u.role === "ADMIN" || u.role === "SUPER_ADMIN").length;
+  const activeUsers = users.filter((u) => u.status === "ACTIVE" || u.status === "Active").length;
+  const admins = users.filter((u) => u.role === "ADMIN" || u.role === "COMPANY_ADMIN" || u.role === "BRANCH_ADMIN" || u.role === "SUPER_ADMIN").length;
   const staff = users.filter((u) => u.role === "IT_STAFF").length;
 
   const kpis = [
@@ -86,7 +173,7 @@ export default function UsersPage() {
                           u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
                           u.department.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesRole = roleFilter === "ALL" ? true : u.role === roleFilter;
-    const matchesStatus = statusFilter === "ALL" ? true : u.status === statusFilter;
+    const matchesStatus = statusFilter === "ALL" ? true : (u.status === statusFilter || u.status?.toUpperCase() === statusFilter?.toUpperCase());
     return matchesSearch && matchesRole && matchesStatus;
   });
 
@@ -104,14 +191,6 @@ export default function UsersPage() {
     return "Employee";
   };
 
-  // Toggle user status
-  const toggleStatus = (id) => {
-    setUsers((prev) =>
-      prev.map((u) =>
-        u.id === id ? { ...u, status: u.status === "Active" ? "Inactive" : "Active" } : u
-      )
-    );
-  };
 
   const columns = [
     {
@@ -178,10 +257,10 @@ export default function UsersPage() {
           borderRadius: "4px",
           fontSize: "12px",
           fontWeight: "600",
-          backgroundColor: row.status === "Active" ? "#ECFDF5" : "#FEF2F2",
-          color: row.status === "Active" ? "#047857" : "#B91C1C"
+          backgroundColor: (row.status === "ACTIVE" || row.status === "Active") ? "#ECFDF5" : "#FEF2F2",
+          color: (row.status === "ACTIVE" || row.status === "Active") ? "#047857" : "#B91C1C"
         }}>
-          {row.status === "Active" ? <FaCheckCircle /> : <FaTimesCircle />} {row.status}
+          {(row.status === "ACTIVE" || row.status === "Active") ? <FaCheckCircle /> : <FaTimesCircle />} {row.status}
         </span>
       )
     },
@@ -198,13 +277,47 @@ export default function UsersPage() {
       key: "actions",
       label: "Actions",
       render: (row) => (
-        <button
-          onClick={() => toggleStatus(row.id)}
-          className="secondary-button"
-          style={{ height: "26px", fontSize: "11px", minWidth: "80px" }}
-        >
-          {row.status === "Active" ? "Deactivate" : "Activate"}
-        </button>
+        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+          {(hasPermission("user.edit") || isAdmin) && (
+            <button
+              onClick={() => toggleStatus(row.id, row.status)}
+              className="secondary-button"
+              style={{ height: "26px", fontSize: "11px", minWidth: "70px" }}
+            >
+              {row.status === "ACTIVE" || row.status === "Active" ? "Deactivate" : "Activate"}
+            </button>
+          )}
+          {(hasPermission("user.edit") || isAdmin) && (
+            <button 
+              onClick={() => handleEditUser(row)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "var(--color-primary)",
+                cursor: "pointer",
+                padding: "4px"
+              }}
+              title="Edit User"
+            >
+              <FaEdit />
+            </button>
+          )}
+          {(hasPermission("user.delete") || isAdmin) && (
+            <button 
+              onClick={() => handleDeleteUser(row.id)}
+              style={{
+                background: "none",
+                border: "none",
+                color: "#ef4444",
+                cursor: "pointer",
+                padding: "4px"
+              }}
+              title="Delete User"
+            >
+              <FaTrash />
+            </button>
+          )}
+        </div>
       )
     }
   ];
@@ -213,13 +326,15 @@ export default function UsersPage() {
     <div style={{ display: "flex", flexDirection: "column", gap: "16px", paddingBottom: "32px" }}>
       <PageTitle 
         action={
-          <button 
-            className="module-button"
-            onClick={() => setShowAddModal(true)}
-            style={{ display: "flex", alignItems: "center", gap: "8px" }}
-          >
-            <FaUserPlus /> Add User
-          </button>
+          (hasPermission("user.create") || isAdmin) ? (
+            <button 
+              className="module-button"
+              onClick={() => setShowAddModal(true)}
+              style={{ display: "flex", alignItems: "center", gap: "8px" }}
+            >
+              <FaUserPlus /> Add User
+            </button>
+          ) : null
         } 
       />
 
@@ -319,10 +434,14 @@ export default function UsersPage() {
               alignItems: "center"
             }}>
               <h3 style={{ margin: 0, fontSize: "16px", fontWeight: "700", color: "var(--text-main)", letterSpacing: "-0.01em" }}>
-                Add New System User
+                {editingUserId ? "Edit User" : "Add New System User"}
               </h3>
               <button 
-                onClick={() => setShowAddModal(false)}
+                onClick={() => {
+                  setShowAddModal(false);
+                  setEditingUserId(null);
+                  setFormData({ name: "", email: "", password: "", employeeId: "", role: "EMPLOYEE", status: "ACTIVE", department: "" });
+                }}
                 style={{
                   background: "none",
                   border: "none",
@@ -430,6 +549,67 @@ export default function UsersPage() {
                 />
               </div>
 
+              {/* Password Field */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  {editingUserId ? "Change Password (Optional)" : "Initial Password"}
+                </label>
+                <input
+                  type="password"
+                  name="password"
+                  value={formData.password}
+                  onChange={handleInputChange}
+                  placeholder={editingUserId ? "Leave blank to keep unchanged" : "e.g. UserSecure123!"}
+                  required={!editingUserId}
+                  onFocus={() => setFocusedField("password")}
+                  onBlur={() => setFocusedField("")}
+                  style={{
+                    width: "100%",
+                    height: "40px",
+                    padding: "0 14px",
+                    fontSize: "13px",
+                    borderRadius: "8px",
+                    border: focusedField === "password" ? "1px solid var(--color-primary)" : "1px solid var(--border-color)",
+                    boxShadow: focusedField === "password" ? "0 0 0 3px rgba(33, 133, 243, 0.15)" : "var(--shadow-sm)",
+                    backgroundColor: "var(--bg-surface)",
+                    color: "var(--text-main)",
+                    transition: "all 0.2s ease",
+                    outline: "none",
+                    boxSizing: "border-box"
+                  }}
+                />
+              </div>
+
+              {/* Employee ID Field */}
+              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                <label style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                  Employee ID (Optional)
+                </label>
+                <input
+                  type="text"
+                  name="employeeId"
+                  value={formData.employeeId}
+                  onChange={handleInputChange}
+                  placeholder="e.g. EMP-001"
+                  onFocus={() => setFocusedField("employeeId")}
+                  onBlur={() => setFocusedField("")}
+                  style={{
+                    width: "100%",
+                    height: "40px",
+                    padding: "0 14px",
+                    fontSize: "13px",
+                    borderRadius: "8px",
+                    border: focusedField === "employeeId" ? "1px solid var(--color-primary)" : "1px solid var(--border-color)",
+                    boxShadow: focusedField === "employeeId" ? "0 0 0 3px rgba(33, 133, 243, 0.15)" : "var(--shadow-sm)",
+                    backgroundColor: "var(--bg-surface)",
+                    color: "var(--text-main)",
+                    transition: "all 0.2s ease",
+                    outline: "none",
+                    boxSizing: "border-box"
+                  }}
+                />
+              </div>
+
               {/* Department / Cost Center Field */}
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 <label style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
@@ -489,11 +669,19 @@ export default function UsersPage() {
                       boxSizing: "border-box"
                     }}
                   >
-                    <option value="ADMIN">Admin</option>
-                    <option value="IT_STAFF">IT Staff</option>
-                    <option value="MANAGER">Manager</option>
-                    <option value="AUDITOR">Auditor</option>
-                    <option value="EMPLOYEE">Employee</option>
+                    {availableRoles.map((role) => (
+                      <option key={role.key} value={role.key}>
+                        {role.label}
+                      </option>
+                    ))}
+                    {availableRoles.length === 0 && (
+                      <>
+                        <option value="AUDITOR">Auditor</option>
+                        <option value="MANAGER">Manager</option>
+                        <option value="IT_STAFF">IT Staff</option>
+                        <option value="EMPLOYEE">Employee</option>
+                      </>
+                    )}
                   </select>
                 </div>
 
@@ -523,8 +711,8 @@ export default function UsersPage() {
                       boxSizing: "border-box"
                     }}
                   >
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
+                    <option value="ACTIVE">Active</option>
+                    <option value="INACTIVE">Inactive</option>
                   </select>
                 </div>
               </div>
@@ -540,7 +728,11 @@ export default function UsersPage() {
               }}>
                 <button 
                   type="button" 
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setEditingUserId(null);
+                    setFormData({ name: "", email: "", password: "", employeeId: "", role: "EMPLOYEE", status: "ACTIVE", department: "" });
+                  }}
                   style={{
                     height: "40px",
                     padding: "0 20px",
@@ -588,7 +780,7 @@ export default function UsersPage() {
                     e.currentTarget.style.boxShadow = "0 4px 12px rgba(33, 133, 243, 0.2)";
                   }}
                 >
-                  Create User
+                  {editingUserId ? "Save Changes" : "Create User"}
                 </button>
               </div>
             </form>

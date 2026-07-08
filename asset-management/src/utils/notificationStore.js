@@ -39,6 +39,7 @@ const requestOwnerKeys = (asset) => {
     asset.employeeEmail,
     asset.employeeId,
     asset.requestedBy,
+    asset.assignedTo,
   ]
     .map((value) => String(value || "").trim().toLowerCase())
     .filter(Boolean);
@@ -210,7 +211,8 @@ export function syncAssetNotifications(assets = []) {
             assetId: asset._id,
             menuLabel: "Warranty",
             route: "/warranty",
-            targetRoles: ["SUPER_ADMIN", "ADMIN", "IT_STAFF"],
+            targetRoles: ["SUPER_ADMIN", "COMPANY_ADMIN", "BRANCH_ADMIN", "ADMIN", "IT_STAFF"],
+            targetUsers: ownerKeys,
           },
           read: false,
           createdAt: new Date().toISOString(),
@@ -242,6 +244,7 @@ export function syncAssetNotifications(assets = []) {
               menuLabel: "Maintenance",
               route: "/maintenance",
               targetRoles: ["SUPER_ADMIN", "ADMIN", "IT_STAFF"],
+              targetUsers: ownerKeys,
             },
             read: false,
             createdAt: new Date().toISOString(),
@@ -328,6 +331,35 @@ export function syncAssetNotifications(assets = []) {
     upsertSystemNotifications(items, managedPrefixes);
   }
 }
+
+export function syncWorkOrderNotifications(workOrders = [], user) {
+  if (!user) return;
+  const items = [];
+  const managedPrefixes = ["sys_workorder_open_"];
+
+  workOrders.forEach((wo) => {
+    if (wo.status === "Open") {
+      items.push({
+        id: `sys_workorder_open_${wo._id}`,
+        title: "New Damage Report Submitted",
+        message: `Employee ${wo.raisedBy || "Unknown"} reported damage on asset: ${wo.assetName || "Unknown"}.`,
+        type: "info",
+        meta: {
+          menuLabel: "Work Orders",
+          route: "/work-orders",
+          targetRoles: ["SUPER_ADMIN", "COMPANY_ADMIN", "ADMIN", "IT_STAFF"],
+        },
+        read: false,
+        createdAt: wo.createdAt || new Date().toISOString(),
+      });
+    }
+  });
+
+  if (items.length || managedPrefixes.length) {
+    upsertSystemNotifications(items, managedPrefixes);
+  }
+}
+
 
 export function markAllNotificationsRead() {
   writeAll(readAll().map((item) => ({ ...item, read: true })));
