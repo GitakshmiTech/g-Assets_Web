@@ -29,9 +29,25 @@ export default function MyAssets() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [workOrders, setWorkOrders] = useState([]);
+
   useEffect(() => {
     dispatch(fetchAssetList());
   }, [dispatch]);
+
+  useEffect(() => {
+    const fetchWorkOrders = async () => {
+      try {
+        const { data } = await apiInstance.get("/work-orders");
+        if (data.success) {
+          setWorkOrders(data.workOrders || []);
+        }
+      } catch (err) {
+        console.error("Failed to fetch work orders in MyAssets", err);
+      }
+    };
+    fetchWorkOrders();
+  }, []);
 
   // Filter assets to find those assigned to the logged-in user
   const inventoryAssets = getInventoryAssets(assetListData);
@@ -106,36 +122,49 @@ export default function MyAssets() {
     {
       key: "assetStatus",
       label: "Status",
-      render: (row) => (
-        <span className={`status-badge ${row.assetStatus?.toLowerCase()}`}>
-          {row.assetStatus}
-        </span>
-      ),
+      render: (row) => {
+        let displayStatus = row.assetStatus;
+        
+        // Find the most recent work order for this asset to reflect its status
+        const assetWorkOrders = workOrders.filter(
+          (w) => String(w.assetId) === String(row._id) || String(w.assetId) === String(row.assetCode)
+        );
+        if (assetWorkOrders.length > 0) {
+          // Sort to get the latest work order based on date or _id
+          const latestWO = assetWorkOrders.sort((a, b) => {
+            const dateA = new Date(a.date || a.createdAt || 0);
+            const dateB = new Date(b.date || b.createdAt || 0);
+            return dateB - dateA;
+          })[0];
+          
+          // Only override status if repair is active/ongoing
+          if (latestWO.status !== "Completed") {
+            displayStatus = latestWO.status;
+          }
+        } else if (row.assetStatus === "UNDER_REPAIR") {
+          displayStatus = "In Progress"; // Fallback
+        }
+
+        let badgeClass = "default";
+        if (displayStatus === "ASSIGNED" || displayStatus === "AVAILABLE") {
+          badgeClass = "assigned";
+        } else if (displayStatus === "Completed") {
+          badgeClass = "completed"; // Usually success color
+        } else if (displayStatus === "Open") {
+          badgeClass = "open";
+        } else if (displayStatus === "In Progress" || displayStatus === "UNDER_REPAIR") {
+          badgeClass = "ongoing";
+        }
+
+        return (
+          <span className={`status-badge ${badgeClass}`}>
+            {displayStatus}
+          </span>
+        );
+      },
     },
     { key: "officeName", label: "Office" },
     { key: "department", label: "Department" },
-    {
-      key: "actions",
-      label: "Action",
-      render: (row) => (
-        <button
-          type="button"
-          className="report-damage-btn"
-          onClick={() => {
-            setReportForm({
-              assetId: row._id,
-              assetName: row.assetName,
-              complaintTitle: "",
-              incidentImage: "",
-            });
-            setIsReportModalOpen(true);
-          }}
-          disabled={row.assetStatus === "UNDER_REPAIR"}
-        >
-          <FaExclamationTriangle size={12} /> {row.assetStatus === "UNDER_REPAIR" ? "Reported" : "Report Damage"}
-        </button>
-      ),
-    },
   ];
 
   const totalAssigned = assignedAssets.length;
@@ -150,15 +179,38 @@ export default function MyAssets() {
         description="View and manage assets assigned to your profile. Report dynamic damage or issues directly to support."
       />
 
-      <KpiGrid
-        items={[
-          { label: "Total Assigned Assets", value: totalAssigned, icon: <FaLaptop /> },
-          { label: "Active Assets", value: activeAssets, icon: <FaCheckCircle style={{ color: "#10b981" }} /> },
-          { label: "Assets Under Repair", value: underRepair, icon: <FaTools style={{ color: "#f59e0b" }} /> },
-        ]}
-      />
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+        <div style={{ flex: 1 }}>
+          <KpiGrid
+            items={[
+              { label: "Total Assigned Assets", value: totalAssigned, icon: <FaLaptop /> },
+              { label: "Active Assets", value: activeAssets, icon: <FaCheckCircle style={{ color: "#10b981" }} /> },
+              { label: "Assets Under Repair", value: underRepair, icon: <FaTools style={{ color: "#f59e0b" }} /> },
+            ]}
+          />
+        </div>
+        <div style={{ marginLeft: '16px', marginTop: '16px' }}>
+          <button
+            type="button"
+            className="report-damage-btn"
+            style={{ padding: '8px 16px', display: 'flex', alignItems: 'center', gap: '8px' }}
+            onClick={() => {
+              setReportForm({
+                assetId: assignedAssets.length > 0 ? assignedAssets[0]._id : "",
+                assetName: assignedAssets.length > 0 ? assignedAssets[0].assetName : "",
+                complaintTitle: "",
+                incidentImage: "",
+              });
+              setIsReportModalOpen(true);
+            }}
+          >
+            <FaExclamationTriangle size={12} /> Report Damage
+          </button>
+        </div>
+      </div>
 
       <div className="my-assets-container">
+
         {loading ? (
           <div className="loading-container">Loading assigned assets...</div>
         ) : (
@@ -183,12 +235,23 @@ export default function MyAssets() {
               <div className="drawer-body">
                 <div className="form-group">
                   <label>Selected Asset</label>
-                  <input
-                    type="text"
-                    value={reportForm.assetName}
-                    disabled
-                    style={{ backgroundColor: "#e2e8f0", cursor: "not-allowed" }}
-                  />
+                  <select
+                    value={reportForm.assetId}
+                    onChange={(e) => {
+                      const selected = assignedAssets.find((a) => String(a._id) === String(e.target.value));
+                      if (selected) {
+                        setReportForm({ ...reportForm, assetId: selected._id, assetName: selected.assetName });
+                      }
+                    }}
+                    required
+                  >
+                    <option value="" disabled>Select an asset</option>
+                    {assignedAssets.map((asset) => (
+                      <option key={asset._id} value={asset._id}>
+                        {asset.assetName} ({asset.assetCode})
+                      </option>
+                    ))}
+                  </select>
                 </div>
 
                 <div className="form-group">

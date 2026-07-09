@@ -11,15 +11,27 @@ export const getAllWorkOrders = async (req, res) => {
       query.companyId = req.user.companyId;
     }
 
+    const andConditions = [];
+
+    if (req.user.role === "EMPLOYEE") {
+      andConditions.push({ $or: [{ employeeEmail: req.user.email }, { raisedByEmail: req.user.email }] });
+    }
+
     if (status && status !== "ALL") query.status = status;
     if (search) {
-      query.$or = [
-        { complaintId: { $regex: search, $options: "i" } },
-        { assetId: { $regex: search, $options: "i" } },
-        { assetName: { $regex: search, $options: "i" } },
-        { complaintType: { $regex: search, $options: "i" } },
-        { complaintTitle: { $regex: search, $options: "i" } },
-      ];
+      andConditions.push({
+        $or: [
+          { complaintId: { $regex: search, $options: "i" } },
+          { assetId: { $regex: search, $options: "i" } },
+          { assetName: { $regex: search, $options: "i" } },
+          { complaintType: { $regex: search, $options: "i" } },
+          { complaintTitle: { $regex: search, $options: "i" } },
+        ]
+      });
+    }
+
+    if (andConditions.length > 0) {
+      query.$and = andConditions;
     }
     if (product) query.assetName = { $regex: product, $options: "i" };
     const workOrders = await WorkOrder.find(query).sort({ createdAt: -1 });

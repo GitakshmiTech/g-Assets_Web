@@ -17,10 +17,10 @@ function AddPOModal({ isOpen, onClose, onSuccess, vendor }) {
   const shippingSection = formSections.find(s => s.key === "Shipping Location" || s.title === "Shipping Location");
 
   const [shippingAddress, setShippingAddress] = useState({
-    addressLine1: "Suite 404, Tech Park",
-    addressLine2: "Gota",
-    city: "Ahmedabad",
-    state: "Gujarat",
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
   });
 
   const [products, setProducts] = useState([
@@ -42,7 +42,7 @@ function AddPOModal({ isOpen, onClose, onSuccess, vendor }) {
           const requests = (response.data.assets || []).filter(
             (asset) =>
               asset.recordType === "REQUEST" &&
-              ["APPROVED", "APPROVED_BY_ADMIN"].includes(asset.assetStatus)
+              asset.requestStatus === "Approved"
           );
           setApprovedRequests(requests);
         }
@@ -262,7 +262,13 @@ function AddPOModal({ isOpen, onClose, onSuccess, vendor }) {
                       <input
                         type="text"
                         required={isFieldRequired(field.name)}
-                        placeholder={`Enter ${field.label}...`}
+                        placeholder={
+                          field.name === "addressLine1" ? "e.g. Suite 404, Tech Park" :
+                          field.name === "addressLine2" ? "e.g. Gota" :
+                          field.name === "city" ? "e.g. Ahmedabad" :
+                          field.name === "state" ? "e.g. Gujarat" :
+                          `Enter ${field.label}...`
+                        }
                         value={shippingAddress[field.name] || ""}
                         onChange={(e) => handleAddressChange(field.name, e.target.value)}
                       />

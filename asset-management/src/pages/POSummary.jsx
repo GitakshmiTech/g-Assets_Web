@@ -67,6 +67,34 @@ function POSummary() {
     }
   };
 
+  const handleStatusChange = async (newStatus) => {
+    try {
+      const response = await apiInstance.put(`/purchase-orders/${id}/status`, {
+        status: newStatus,
+      });
+      if (response.data.success) {
+        setPo(response.data.purchaseOrder);
+        showToast({
+          title: "Status Updated",
+          message: `Purchase order status changed to ${newStatus}.`,
+          type: "success",
+        });
+      } else {
+        showToast({
+          title: "Error updating status",
+          message: response.data.message || "Failed to update status",
+          type: "error",
+        });
+      }
+    } catch (error) {
+      showToast({
+        title: "Connection error",
+        message: error.response?.data?.message || "Failed to connect to backend api",
+        type: "error",
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="po-summary-loading">
@@ -147,9 +175,33 @@ function POSummary() {
             <FaShoppingCart className="icon" />
             <div className="details">
               <span>Order Status</span>
-              <strong className={`asset-status-pill ${getStatusClass(po.status)}`}>
-                {po.status}
-              </strong>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <strong className={`asset-status-pill ${getStatusClass(po.status)}`}>
+                  {po.status}
+                </strong>
+                {po.status !== "Received" && (
+                  <select
+                    value={po.status}
+                    onChange={(e) => handleStatusChange(e.target.value)}
+                    className="po-status-inline-select"
+                    style={{
+                      padding: "3px 6px",
+                      borderRadius: "4px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "11px",
+                      fontWeight: "600",
+                      backgroundColor: "#ffffff",
+                      cursor: "pointer",
+                      outline: "none",
+                      color: "#475569"
+                    }}
+                  >
+                    <option value="PO Raised">PO Raised (Pending)</option>
+                    <option value="Partially Received">Partially Received</option>
+                    <option value="Received">Received (Arrived)</option>
+                  </select>
+                )}
+              </div>
             </div>
           </div>
         </div>

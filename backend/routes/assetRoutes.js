@@ -31,6 +31,7 @@ import {
   updatePurchaseOrderStatus,
 } from "../controllers/purchaseOrderController.js";
 import { getAllInvoices } from "../controllers/invoiceController.js";
+import { listVendors, createVendor } from "../controllers/vendorController.js";
 import {
   getAllWorkOrders,
   getWorkOrderById,
@@ -94,8 +95,12 @@ router.put("/purchase-orders/:id/status", authenticate, allowPermissions(PERMISS
 // Invoice Routes
 router.get("/invoices", authenticate, allowPermissions(PERMISSIONS.PROCUREMENT_MANAGE), getAllInvoices);
 
+// Vendor Routes
+router.get("/vendors", authenticate, allowPermissions(PERMISSIONS.PROCUREMENT_MANAGE), listVendors);
+router.post("/vendors", authenticate, allowPermissions(PERMISSIONS.PROCUREMENT_MANAGE), createVendor);
+
 // Work Order Routes
-router.get("/work-orders", authenticate, allowPermissions(PERMISSIONS.WORK_ORDERS_MANAGE), getAllWorkOrders);
+router.get("/work-orders", authenticate, allowPermissions(PERMISSIONS.WORK_ORDERS_MANAGE, PERMISSIONS.EMPLOYEE_PORTAL), getAllWorkOrders);
 router.get("/work-orders/:id", authenticate, allowPermissions(PERMISSIONS.WORK_ORDERS_MANAGE), getWorkOrderById);
 router.post("/work-orders", authenticate, allowPermissions(PERMISSIONS.WORK_ORDERS_MANAGE, PERMISSIONS.EMPLOYEE_PORTAL), createWorkOrder);
 router.put("/work-orders/:id", authenticate, allowPermissions(PERMISSIONS.WORK_ORDERS_MANAGE), updateWorkOrder);

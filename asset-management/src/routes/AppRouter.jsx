@@ -52,7 +52,7 @@ function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
+        <Route path="/register" element={<Navigate to="/login" replace />} />
         <Route path="/scan/:id" element={<AssetDetails />} />
         <Route element={<RequireAuth />}>
           <Route element={<AppLayout />}>

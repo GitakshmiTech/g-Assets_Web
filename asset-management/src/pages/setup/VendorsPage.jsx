@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageTitle, KpiGrid, DataTable } from "../../components/common/ModuleComponents";
 import { FaBuilding, FaUser, FaPhone, FaMapMarkerAlt, FaPlus, FaArrowLeft, FaBoxes, FaEnvelope, FaLaptop, FaExternalLinkAlt, FaTrash, FaSearch } from "react-icons/fa";
+import apiInstance from "../../apis/apiConfig";
 
 export default function VendorsPage() {
   const [selectedVendor, setSelectedVendor] = useState(null);
@@ -11,6 +12,36 @@ export default function VendorsPage() {
 
   // Seeded mock vendors list
   const [vendors, setVendors] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  const fetchVendors = async () => {
+    setLoading(true);
+    try {
+      const response = await apiInstance.get("/vendors");
+      if (response.data.success) {
+        const mapped = (response.data.vendors || []).map((v) => ({
+          id: v._id || v.id,
+          name: v.name,
+          contact: v.contactPerson || v.contact || "N/A",
+          email: v.email,
+          phone: v.phone || "N/A",
+          address: v.address || "N/A",
+          reliability: v.reliability || "High",
+          totalOrders: v.totalOrders || 0,
+          suppliedAssets: v.suppliedAssets || [],
+        }));
+        setVendors(mapped);
+      }
+    } catch (error) {
+      console.error("Failed to fetch vendors", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVendors();
+  }, []);
 
   // Form State for Adding New Vendor
   const [formData, setFormData] = useState({
@@ -28,32 +59,28 @@ export default function VendorsPage() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleAddVendor = (e) => {
+  const handleAddVendor = async (e) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.contact.trim() || !formData.email.trim()) {
       setFormError("Please fill in the vendor name, contact person, and email.");
       return;
     }
 
-    const newVendor = {
-      id: `VND00${vendors.length + 1}`,
-      name: formData.name,
-      contact: formData.contact,
-      email: formData.email,
-      phone: formData.phone || "N/A",
-      address: formData.address || "N/A",
-      reliability: formData.reliability,
-      totalOrders: 0,
-      suppliedAssets: []
-    };
-
-    setVendors((prev) => [...prev, newVendor]);
-    setShowAddModal(false);
-    setFormData({ name: "", contact: "", email: "", phone: "", address: "", reliability: "High" });
-    setFormError("");
-
-    setToastMessage(`Vendor ${newVendor.name} added successfully!`);
-    setTimeout(() => setToastMessage(""), 3000);
+    try {
+      const response = await apiInstance.post("/vendors", formData);
+      if (response.data.success) {
+        setShowAddModal(false);
+        setFormData({ name: "", contact: "", email: "", phone: "", address: "", reliability: "High" });
+        setFormError("");
+        setToastMessage(`Vendor ${formData.name} added successfully!`);
+        setTimeout(() => setToastMessage(""), 3000);
+        fetchVendors();
+      } else {
+        setFormError(response.data.message || "Failed to create vendor.");
+      }
+    } catch (error) {
+      setFormError(error.response?.data?.message || "Failed to connect to backend api.");
+    }
   };
 
   // Filter vendors by search

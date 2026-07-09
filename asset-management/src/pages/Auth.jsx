@@ -316,7 +316,6 @@ export function Login() {
             Login with GT_ONE
           </button>
         )}
-        <p className="auth-link">New user? <Link to="/register">Register account</Link></p>
       </form>
 
       {/* MFA Setup/Verification Modal Overlay */}

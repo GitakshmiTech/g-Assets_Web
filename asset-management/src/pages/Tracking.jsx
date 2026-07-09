@@ -2,13 +2,41 @@ import React, { useState, useEffect, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchAssetList } from "../store/slices/assetSlice";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
-import MarkerClusterGroup from "react-leaflet-cluster";
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import iconRetinaUrl from "leaflet/dist/images/marker-icon-2x.png";
 import iconUrl from "leaflet/dist/images/marker-icon.png";
 import shadowUrl from "leaflet/dist/images/marker-shadow.png";
 import "./Tracking.css";
+
+const COLORS = [
+  { name: "blue", hex: "#3B82F6" },
+  { name: "red", hex: "#EF4444" },
+  { name: "green", hex: "#10B981" },
+  { name: "purple", hex: "#8B5CF6" },
+  { name: "orange", hex: "#F59E0B" },
+  { name: "pink", hex: "#EC4899" },
+  { name: "teal", hex: "#14B8A6" },
+];
+
+const getAssetColor = (index) => {
+  return COLORS[index % COLORS.length];
+};
+
+const createMarkerIcon = (colorHex) => {
+  const svgTemplate = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32">
+      <path fill="${colorHex}" stroke="#FFFFFF" stroke-width="1.5" d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/>
+    </svg>
+  `;
+  return L.divIcon({
+    html: svgTemplate,
+    className: "custom-map-marker",
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
+  });
+};
 
 // Fix for default marker icon in react-leaflet
 delete L.Icon.Default.prototype._getIconUrl;
@@ -106,11 +134,20 @@ const Tracking = () => {
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               {trackedAssets.length > 0 && <MapFitter assets={trackedAssets} />}
-              <MarkerClusterGroup chunkedLoading>
-                {trackedAssets.map((asset) => (
+              {trackedAssets.map((asset, index) => {
+                const assetColor = getAssetColor(index);
+                const icon = createMarkerIcon(assetColor.hex);
+                // Offset coordinates slightly to avoid complete overlapping
+                const latOffset = (index - (trackedAssets.length - 1) / 2) * 0.00012;
+                const lngOffset = (index - (trackedAssets.length - 1) / 2) * 0.00012;
+                return (
                   <Marker 
                     key={asset._id} 
-                    position={[asset.gpsLocation.latitude, asset.gpsLocation.longitude]}
+                    position={[
+                      asset.gpsLocation.latitude + latOffset,
+                      asset.gpsLocation.longitude + lngOffset
+                    ]}
+                    icon={icon}
                   >
                     <Popup className="asset-popup">
                       <div className="popup-content">
@@ -128,8 +165,8 @@ const Tracking = () => {
                       </div>
                     </Popup>
                   </Marker>
-                ))}
-              </MarkerClusterGroup>
+                );
+              })}
             </MapContainer>
           )}
         </div>
@@ -138,15 +175,29 @@ const Tracking = () => {
           <h3>Tracked Assets ({trackedAssets.length})</h3>
           <div className="tracking-sidebar-list">
             {trackedAssets.length > 0 ? (
-              trackedAssets.map(asset => (
-                <div key={asset._id} className="tracking-sidebar-item">
-                  <h4>{asset.assetName}</h4>
-                  <div className="tracking-sidebar-item-details">
-                    <span><strong>Code:</strong> {asset.assetCode || asset.serialNumber || 'N/A'}</span>
-                    <span><strong>User:</strong> {asset.assignedTo?.name || 'Unassigned'}</span>
+              trackedAssets.map((asset, index) => {
+                const assetColor = getAssetColor(index);
+                return (
+                  <div key={asset._id} className="tracking-sidebar-item">
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                      <span style={{
+                        display: "inline-block",
+                        width: "12px",
+                        height: "12px",
+                        borderRadius: "50%",
+                        backgroundColor: assetColor.hex,
+                        border: "1px solid rgba(0,0,0,0.15)",
+                        flexShrink: 0
+                      }} />
+                      <h4 style={{ margin: 0, fontSize: "14px", fontWeight: "600" }}>{asset.assetName}</h4>
+                    </div>
+                    <div className="tracking-sidebar-item-details">
+                      <span><strong>Code:</strong> {asset.assetCode || asset.serialNumber || 'N/A'}</span>
+                      <span><strong>User:</strong> {asset.assignedTo?.name || 'Unassigned'}</span>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             ) : (
               <p className="no-assets-text">No assets found matching filters.</p>
             )}

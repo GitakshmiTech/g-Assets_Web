@@ -308,8 +308,8 @@ function WorkOrdersPage() {
           message: `Your complaint ${selectedWO.complaintId} on asset ${selectedWO.assetName} is now ${status}.`,
           type: status === "Completed" ? "success" : "info",
           meta: {
-            menuLabel: "Employee Portal",
-            route: "/employees",
+            menuLabel: "My Assets",
+            route: "/my-assets",
             targetUsers: [selectedWO.employeeEmail, selectedWO.raisedByEmail, selectedWO.raisedBy].filter(Boolean)
           }
         });
@@ -792,6 +792,7 @@ function WorkOrdersPage() {
                       id="status-select"
                       value={status}
                       onChange={(e) => setStatus(e.target.value)}
+                      disabled={selectedWO?.status === "Completed"}
                     >
                       <option value="Open">Open</option>
                       <option value="In Progress">In Progress</option>

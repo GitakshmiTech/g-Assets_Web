@@ -9,8 +9,6 @@ import { useToast } from "../components/toast/toastStore";
 import apiInstance from "../apis/apiConfig";
 import { TablePagination, TablePageSizeSelector } from "../components/common/ModuleComponents";
 
-const VENDORS = [];
-
 function Procurements() {
   const navigate = useNavigate();
   const { showToast } = useToast();
@@ -21,6 +19,8 @@ function Procurements() {
   const [loading, setLoading] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
+  const [vendors, setVendors] = useState([]);
+  const [vendorsLoading, setVendorsLoading] = useState(false);
 
   // Invoices tab state variables
   const [invoices, setInvoices] = useState([]);
@@ -124,6 +124,39 @@ function Procurements() {
       fetchInvoices();
     }
   }, [activeTab, searchInvoiceQuery, invoiceDateFilter]);
+
+  const fetchVendors = async () => {
+    setVendorsLoading(true);
+    try {
+      const response = await apiInstance.get("/vendors");
+      if (response.data.success) {
+        const mapped = (response.data.vendors || []).map((v) => ({
+          id: v._id || v.id,
+          orgName: v.name,
+          contactPerson: v.contactPerson || v.contact || "N/A",
+          email: v.email,
+          phone: v.phone || "N/A",
+          address: v.address || "N/A",
+          reliability: v.reliability || "High",
+          totalOrders: v.totalOrders || 0,
+          suppliedAssets: v.suppliedAssets || [],
+          logoText: v.name ? v.name.substring(0, 2).toUpperCase() : "VN",
+          logoColor: "#0d9488",
+        }));
+        setVendors(mapped);
+      }
+    } catch (error) {
+      console.error("Failed to fetch vendors in procurements", error);
+    } finally {
+      setVendorsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "raise-po") {
+      fetchVendors();
+    }
+  }, [activeTab]);
 
   const handlePoClick = async (poNumber) => {
     try {
@@ -355,52 +388,71 @@ function Procurements() {
             <h2 className="section-title">Select Vendor to Raise PO</h2>
             <p className="section-subtitle">Choose an authorized merchant below to launch the purchase order creation catalog.</p>
 
-            <div className="vendor-cards-grid">
-              {VENDORS.map((vendor, index) => (
-                <motion.div
-                  className="vendor-card"
-                  key={index}
-                  whileHover={{ scale: 1.02, translateY: -2 }}
-                  transition={{ duration: 0.2 }}
+            {vendorsLoading ? (
+              <div className="procurement-loading">
+                <div className="spinner"></div>
+                <p>Loading Vendors...</p>
+              </div>
+            ) : vendors.length > 0 ? (
+              <div className="vendor-cards-grid">
+                {vendors.map((vendor, index) => (
+                  <motion.div
+                    className="vendor-card"
+                    key={index}
+                    whileHover={{ scale: 1.02, translateY: -2 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="vendor-card-header">
+                      <div
+                        className="vendor-logo-avatar"
+                        style={{ backgroundColor: vendor.logoColor }}
+                      >
+                        {vendor.logoText}
+                      </div>
+                      <div className="vendor-title-block">
+                        <h3>{vendor.orgName}</h3>
+                        <span className="vendor-type-tag">Verified Vendor</span>
+                      </div>
+                    </div>
+                    <div className="vendor-card-body">
+                      <div className="info-row">
+                        <span>Contact Name:</span>
+                        <strong>{vendor.contactPerson}</strong>
+                      </div>
+                      <div className="info-row">
+                        <span>Email Address:</span>
+                        <strong>{vendor.email}</strong>
+                      </div>
+                      <div className="info-row">
+                        <span>Phone Number:</span>
+                        <strong>{vendor.phone}</strong>
+                      </div>
+                    </div>
+                    <div className="vendor-card-footer">
+                      <button
+                        className="add-btn raise-po-btn"
+                        onClick={() => handleOpenAddPO(vendor)}
+                        style={{ backgroundColor: "#2563eb", color: "#ffffff", border: "none" }}
+                      >
+                        Raise Purchase Order
+                      </button>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            ) : (
+              <div className="procurement-empty-state" style={{ textAlign: "center", padding: "40px" }}>
+                <h3>No Vendors Registered</h3>
+                <p>Please register vendors under Setup &gt; Vendors first to raise a Purchase Order.</p>
+                <button 
+                  className="add-btn mt-3" 
+                  onClick={() => navigate("/setup/vendors")}
+                  style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}
                 >
-                  <div className="vendor-card-header">
-                    <div
-                      className="vendor-logo-avatar"
-                      style={{ backgroundColor: vendor.logoColor }}
-                    >
-                      {vendor.logoText}
-                    </div>
-                    <div className="vendor-title-block">
-                      <h3>{vendor.orgName}</h3>
-                      <span className="vendor-type-tag">Verified Vendor</span>
-                    </div>
-                  </div>
-                  <div className="vendor-card-body">
-                    <div className="info-row">
-                      <span>Contact Name:</span>
-                      <strong>{vendor.contactPerson}</strong>
-                    </div>
-                    <div className="info-row">
-                      <span>Email Address:</span>
-                      <strong>{vendor.email}</strong>
-                    </div>
-                    <div className="info-row">
-                      <span>Phone Number:</span>
-                      <strong>{vendor.phone}</strong>
-                    </div>
-                  </div>
-                  <div className="vendor-card-footer">
-                    <button
-                      className="add-btn raise-po-btn"
-                      onClick={() => handleOpenAddPO(vendor)}
-                      style={{ backgroundColor: "#2563eb", color: "#ffffff", border: "none" }}
-                    >
-                      Raise Purchase Order
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+                  <FaPlus /> Go to Setup Vendors
+                </button>
+              </div>
+            )}
           </div>
         )}
 

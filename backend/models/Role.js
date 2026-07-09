@@ -44,18 +44,6 @@ export const ensureDefaultRoles = async () => {
           permissions: role.permissions,
           isSystem: true,
         });
-      } else {
-        let updated = false;
-        role.sidebarAccess.forEach((item) => {
-          if (!exists.sidebarAccess.includes(item)) {
-            exists.sidebarAccess.push(item);
-            updated = true;
-          }
-        });
-        if (updated) {
-          exists.access = exists.sidebarAccess.join(", ");
-          await exists.save();
-        }
       }
     })
   );

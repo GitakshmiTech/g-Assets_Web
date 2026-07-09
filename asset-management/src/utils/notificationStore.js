@@ -59,7 +59,7 @@ const parseReportingTo = (reportingToString) => {
 const isNotificationForUser = (item, user) => {
   if (!user) return false;
   const meta = item?.meta || {};
-  const targets = meta.targetUsers || [];
+  const targets = (meta.targetUsers || []).map((t) => String(t).trim().toLowerCase());
   const targetRoles = meta.targetRoles || [];
   const excluded = meta.excludeUsers || [];
   const currentKeys = userKeys(user);

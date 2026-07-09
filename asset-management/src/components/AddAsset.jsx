@@ -26,6 +26,7 @@ import { isNetworkAssetCategory, getSubcategoriesForCategory, getCategoryGroup, 
 import Select from "react-select";
 import { FaShieldAlt } from "react-icons/fa";
 import apiInstance from "../apis/apiConfig";
+import { pushAppNotification } from "../utils/notificationStore";
 
 const generateReqId = () => `REQ-${Date.now()}`;
 
@@ -275,6 +276,11 @@ function AddAsset() {
       }
       reset({
         ...singleAssetData,
+        assignedTo: singleAssetData.assignedTo
+          ? (typeof singleAssetData.assignedTo === "object"
+            ? (singleAssetData.assignedTo._id || singleAssetData.assignedTo.id)
+            : singleAssetData.assignedTo)
+          : "",
         ...customFieldData,
         purchaseDate: formatDate(singleAssetData.purchaseDate),
         warrantyStart: formatDate(singleAssetData.warrantyStart),
@@ -395,6 +401,25 @@ function AddAsset() {
       setSelectedCodeType("qr");
       setBarcodeUrl("");
       setBarcodeError("");
+      
+      // Push notification to Admins if in Request Mode
+      if (isRequestMode) {
+        try {
+          pushAppNotification({
+            title: "New Asset Request Submitted",
+            message: `Employee ${payload.requestedBy || "Someone"} submitted a request for ${payload.assetName || "an asset"}.`,
+            type: "info",
+            meta: {
+              menuLabel: "Approvals",
+              route: "/approvals",
+              targetRoles: ["SUPER_ADMIN", "COMPANY_ADMIN", "ADMIN", "IT_STAFF"],
+            }
+          });
+        } catch (err) {
+          console.error("Failed to push request notification from AddAsset", err);
+        }
+      }
+
       showToast({
         title: isRequestMode ? "Request submitted" : "Asset added",
         message: `${payload.assetName || "Record"} created successfully.`,

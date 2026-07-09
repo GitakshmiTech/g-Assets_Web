@@ -58,7 +58,7 @@ export const createAssetSchema = (formConfig = {}) => {
 
   assetStatus: requiredWhenConfigured(formConfig, "assetStatus", "Asset Status"),
 
-  assignedTo: yup.string().notRequired(),
+  assignedTo: yup.mixed().notRequired(),
 
   serialNumber: conditionalRequired("serialNumber", "Serial Number is required for tracking"),
 

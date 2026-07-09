@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { addAsset, updateAsset, fetchAssetList } from "../store/slices/assetSlice";
 import { useToast } from "../components/toast/toastStore";
 import { getRequestFormSections, loadRequestFormConfig } from "../utils/assetFormBuilder";
+import { pushAppNotification } from "../utils/notificationStore";
 import "./AddRequestPage.css";
 
 export default function AddRequestPage() {
@@ -170,6 +171,23 @@ export default function AddRequestPage() {
         payload.requestId = generateReqId();
         payload.requestDate = formData.requestDate || new Date().toISOString().split("T")[0];
         await dispatch(addAsset(payload)).unwrap();
+        
+        // Push notification to Admins
+        try {
+          pushAppNotification({
+            title: "New Asset Request Submitted",
+            message: `Employee ${user?.name || payload.requestedBy || "Someone"} submitted a request for ${payload.assetName || "an asset"}.`,
+            type: "info",
+            meta: {
+              menuLabel: "Approvals",
+              route: "/approvals",
+              targetRoles: ["SUPER_ADMIN", "COMPANY_ADMIN", "ADMIN", "IT_STAFF"],
+            }
+          });
+        } catch (err) {
+          console.error("Failed to push request notification", err);
+        }
+
         showToast({
           title: "Success",
           message: `Request created successfully.`,
