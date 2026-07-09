@@ -27,6 +27,8 @@ import {
   FaSearch,
   FaFilter,
   FaPlus,
+  FaEdit,
+  FaTrash,
 } from "react-icons/fa";
 import { usePermissions } from "../hooks/usePermissions";
 import "./RequestsPage.css";
@@ -49,6 +51,7 @@ export function Requests() {
   const { assetListData } = useSelector(
     (state) => state.assetList
   );
+  const { user } = useSelector((state) => state.auth);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
@@ -57,7 +60,23 @@ export function Requests() {
     dispatch(fetchAssetList());
   }, [dispatch]);
 
-  const rawRequests = getRequestRecords(assetListData);
+  const isEmployee = user?.role === "EMPLOYEE";
+  const userEmail = user?.email?.toLowerCase();
+  const userName = user?.name?.toLowerCase();
+  const userEmpId = user?.employeeId?.toLowerCase();
+
+  const rawRequests = getRequestRecords(assetListData).filter((item) => {
+    if (!isEmployee) return true;
+    const itemEmail = item.employeeEmail?.toLowerCase();
+    const itemReqBy = item.requestedBy?.toLowerCase();
+    const itemEmpId = item.employeeId?.toLowerCase();
+
+    return (
+      (userEmail && itemEmail === userEmail) ||
+      (userName && itemReqBy === userName) ||
+      (userEmpId && itemEmpId === userEmpId)
+    );
+  });
 
   // Group requests by requestId
   const groupedRequests = [];
@@ -288,19 +307,22 @@ export function Requests() {
               }}
               disabled={!isEditable}
               style={{
-                backgroundColor: isEditable ? "#eff6ff" : "#f1f5f9",
-                color: isEditable ? "#2563eb" : "#94a3b8",
-                border: `1px solid ${isEditable ? "#bfdbfe" : "#cbd5e1"}`,
-                padding: "6px 12px",
+                backgroundColor: isEditable ? "#fffbeb" : "#f8fafc",
+                color: isEditable ? "#ca8a04" : "#cbd5e1",
+                border: `1px solid ${isEditable ? "#fef08a" : "#e2e8f0"}`,
+                width: "32px",
+                height: "32px",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
                 borderRadius: "6px",
-                fontSize: "12px",
-                fontWeight: "600",
                 cursor: isEditable ? "pointer" : "not-allowed",
                 transition: "all 0.15s ease",
+                padding: 0,
               }}
               title={isEditable ? "Edit Request" : "Processed request cannot be edited"}
             >
-              Edit
+              <FaEdit size={14} />
             </button>
             <button
               onClick={() => {
@@ -310,19 +332,22 @@ export function Requests() {
               }}
               disabled={!isEditable}
               style={{
-                backgroundColor: isEditable ? "#fef2f2" : "#f1f5f9",
-                color: isEditable ? "#ef4444" : "#94a3b8",
-                border: `1px solid ${isEditable ? "#fecaca" : "#cbd5e1"}`,
-                padding: "6px 12px",
+                backgroundColor: isEditable ? "#fef2f2" : "#f8fafc",
+                color: isEditable ? "#ef4444" : "#cbd5e1",
+                border: `1px solid ${isEditable ? "#fee2e2" : "#e2e8f0"}`,
+                width: "32px",
+                height: "32px",
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
                 borderRadius: "6px",
-                fontSize: "12px",
-                fontWeight: "600",
                 cursor: isEditable ? "pointer" : "not-allowed",
                 transition: "all 0.15s ease",
+                padding: 0,
               }}
               title={isEditable ? "Delete Request" : "Processed request cannot be deleted"}
             >
-              Delete
+              <FaTrash size={14} />
             </button>
           </div>
         );

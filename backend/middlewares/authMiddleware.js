@@ -21,8 +21,13 @@ export const authenticate = async (req, res, next) => {
     req.user = user;
     const role = await Role.findOne({ key: user.role }).lean();
     req.role = role;
-    req.permissions = role?.permissions?.length ? role.permissions : DEFAULT_ROLE_PERMISSIONS[user.role] || [];
-    req.sidebarAccess = role?.sidebarAccess?.length ? role.sidebarAccess : DEFAULT_ROLE_SIDEBAR[user.role] || [];
+    if (user.hasCustomPermissions) {
+      req.permissions = user.permissions || [];
+      req.sidebarAccess = user.sidebarAccess || [];
+    } else {
+      req.permissions = role?.permissions?.length ? role.permissions : DEFAULT_ROLE_PERMISSIONS[user.role] || [];
+      req.sidebarAccess = role?.sidebarAccess?.length ? role.sidebarAccess : DEFAULT_ROLE_SIDEBAR[user.role] || [];
+    }
     req.hasPermission = (permission) => req.permissions.includes(permission);
     next();
   } catch {

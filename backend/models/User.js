@@ -97,6 +97,18 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
+    permissions: {
+      type: [String],
+      default: [],
+    },
+    sidebarAccess: {
+      type: [String],
+      default: [],
+    },
+    hasCustomPermissions: {
+      type: Boolean,
+      default: false,
+    },
   },
   { timestamps: true },
 );
@@ -134,6 +146,9 @@ userSchema.methods.toSafeJSON = function toSafeJSON() {
     profilePhoto: this.profilePhoto,
     companyId: this.companyId,
     branchId: this.branchId,
+    permissions: this.permissions || [],
+    sidebarAccess: this.sidebarAccess || [],
+    hasCustomPermissions: this.hasCustomPermissions || false,
   };
 };
 

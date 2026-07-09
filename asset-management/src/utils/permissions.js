@@ -38,148 +38,158 @@ export const normalizeRoleValue = (role = "") => {
 };
 
 export const PERMISSION_OPTIONS = [
-  { value: "dashboard.overview.view", label: "Dashboard View", group: "Dashboard" },
-  { value: "asset.register.view", label: "Asset View", group: "Assets" },
-  { value: "asset.register.create", label: "Asset Add", group: "Assets" },
-  { value: "asset.register.edit", label: "Asset Edit", group: "Assets" },
-  { value: "asset.register.delete", label: "Asset Delete", group: "Assets" },
-  { value: "asset.assignments.assign", label: "Asset Assign", group: "Assets" },
-  { value: "asset.register.export", label: "QR Generate", group: "QR" },
-  { value: "asset.register.view", label: "QR Scan", group: "QR" },
-  { value: "request.procurement.view", label: "Request View", group: "Requests" },
-  { value: "request.procurement.create", label: "Create Request", group: "Requests" },
-  { value: "request.procurement.approve", label: "Request Approve", group: "Requests" },
-  { value: "request.procurement.reject", label: "Request Reject", group: "Requests" },
-  { value: "inventory.stock.view", label: "Inventory View", group: "Inventory" },
-  { value: "inventory.stock.edit", label: "Inventory Management", group: "Inventory" },
-  { value: "maintenance.logs.view", label: "Maintenance View", group: "Maintenance" },
-  { value: "maintenance.logs.edit", label: "Maintenance Management", group: "Maintenance" },
-  { value: "warranty.tracker.view", label: "Warranty View", group: "Warranty" },
-  { value: "warranty.tracker.edit", label: "Warranty Management", group: "Warranty" },
-  { value: "employee.portal.view", label: "Employee Portal Access", group: "Employees" },
-  { value: "employee.users.edit", label: "Users & Roles Management", group: "Users" },
-  { value: "office.offices.view", label: "Office View", group: "Offices" },
-  { value: "office.offices.edit", label: "Office Management", group: "Offices" },
-  { value: "report.reports.view", label: "Reports View", group: "Reports" },
-  { value: "report.reports.export", label: "Reports Export", group: "Reports" },
-  { value: "asset.register.view", label: "Audit Session View", group: "Audit" },
-  { value: "asset.register.edit", label: "Audit Session Management", group: "Audit" },
-  { value: "settings.preferences.view", label: "System Settings Access", group: "System" },
-  { value: "request.procurement.edit", label: "Procurement Management", group: "Procurements" },
-  { value: "maintenance.logs.edit", label: "Work Orders Management", group: "Work Orders" },
-  { value: "tracking.map.view", label: "Tracking Map View", group: "Tracking" },
+  { value: "dashboard.view", label: "Dashboard View", group: "Dashboard" },
+  { value: "assets.view", label: "Asset View", group: "Assets" },
+  { value: "assets.create", label: "Asset Add", group: "Assets" },
+  { value: "assets.edit", label: "Asset Edit", group: "Assets" },
+  { value: "assets.delete", label: "Asset Delete", group: "Assets" },
+  { value: "assignments.manage", label: "Asset Assign", group: "Assignments" },
+  { value: "qrconsole.generate", label: "QR Generate", group: "QR" },
+  { value: "qrconsole.scan", label: "QR Scan", group: "QR" },
+  { value: "requests.view", label: "Request View", group: "Requests" },
+  { value: "requests.create", label: "Create Request", group: "Requests" },
+  { value: "approvals.approve", label: "Request Approve", group: "Approvals" },
+  { value: "approvals.reject", label: "Request Reject", group: "Approvals" },
+  { value: "inventory.view", label: "Inventory View", group: "Inventory" },
+  { value: "inventory.manage", label: "Inventory Management", group: "Inventory" },
+  { value: "maintenance.view", label: "Maintenance View", group: "Maintenance" },
+  { value: "maintenance.manage", label: "Maintenance Management", group: "Maintenance" },
+  { value: "warranty.view", label: "Warranty View", group: "Warranty" },
+  { value: "warranty.manage", label: "Warranty Management", group: "Warranty" },
+  { value: "employeeportal.view", label: "Employee Portal Access", group: "Employees" },
+  { value: "usersaccess.manage", label: "Users & Roles Management", group: "Users" },
+  { value: "offices.view", label: "Office View", group: "Offices" },
+  { value: "offices.manage", label: "Office Management", group: "Offices" },
+  { value: "reports.view", label: "Reports View", group: "Reports" },
+  { value: "reports.export", label: "Reports Export", group: "Reports" },
+  { value: "auditsession.view", label: "Audit Session View", group: "Audit" },
+  { value: "auditsession.manage", label: "Audit Session Management", group: "Audit" },
+  { value: "setup.manage", label: "System Settings Access", group: "System" },
+  { value: "procurements.manage", label: "Procurement Management", group: "Procurements" },
+  { value: "workorders.manage", label: "Work Orders Management", group: "Work Orders" },
+  { value: "tracking.view", label: "Tracking Map View", group: "Tracking" },
+  { value: "myassets.view", label: "My Assets View", group: "My Assets" },
 ];
 
 export const PERMISSION_MODULES = [
   {
     module: "Dashboard",
     permissions: [
-      { label: "View", value: "dashboard.overview.view" }
+      { label: "View", value: "dashboard.view" }
     ]
   },
   {
     module: "Assets",
     permissions: [
-      { label: "View", value: "asset.register.view" },
-      { label: "Create", value: "asset.register.create" },
-      { label: "Edit", value: "asset.register.edit" },
-      { label: "Delete", value: "asset.register.delete" },
-      { label: "Assign", value: "asset.assignments.assign" }
+      { label: "View", value: "assets.view" },
+      { label: "Create", value: "assets.create" },
+      { label: "Edit", value: "assets.edit" },
+      { label: "Delete", value: "assets.delete" }
+    ]
+  },
+  {
+    module: "My Assets",
+    permissions: [
+      { label: "View", value: "myassets.view" }
     ]
   },
   {
     module: "Requests",
     permissions: [
-      { label: "View", value: "request.procurement.view" },
-      { label: "Create", value: "request.procurement.create" },
-      { label: "Approve", value: "request.procurement.approve" },
-      { label: "Reject", value: "request.procurement.reject" }
+      { label: "View", value: "requests.view" },
+      { label: "Create", value: "requests.create" }
+    ]
+  },
+  {
+    module: "Approvals",
+    permissions: [
+      { label: "Approve", value: "approvals.approve" },
+      { label: "Reject", value: "approvals.reject" }
     ]
   },
   {
     module: "Inventory",
     permissions: [
-      { label: "View", value: "inventory.stock.view" },
-      { label: "Manage", value: "inventory.stock.edit" }
+      { label: "View", value: "inventory.view" },
+      { label: "Manage", value: "inventory.manage" }
     ]
   },
   {
     module: "Maintenance",
     permissions: [
-      { label: "View", value: "maintenance.logs.view" },
-      { label: "Manage", value: "maintenance.logs.edit" }
+      { label: "View", value: "maintenance.view" },
+      { label: "Manage", value: "maintenance.manage" }
     ]
   },
   {
     module: "Warranty",
     permissions: [
-      { label: "View", value: "warranty.tracker.view" },
-      { label: "Manage", value: "warranty.tracker.edit" }
+      { label: "View", value: "warranty.view" },
+      { label: "Manage", value: "warranty.manage" }
     ]
   },
   {
     module: "Employees",
     permissions: [
-      { label: "Portal Access", value: "employee.portal.view" }
+      { label: "Portal Access", value: "employeeportal.view" }
     ]
   },
   {
     module: "Users & Roles",
     permissions: [
-      { label: "View", value: "user.view" },
-      { label: "Manage", value: "employee.users.edit" }
+      { label: "Manage", value: "usersaccess.manage" }
     ]
   },
   {
     module: "Offices",
     permissions: [
-      { label: "View", value: "office.offices.view" },
-      { label: "Manage", value: "office.offices.edit" }
+      { label: "View", value: "offices.view" },
+      { label: "Manage", value: "offices.manage" }
     ]
   },
   {
     module: "Reports",
     permissions: [
-      { label: "View", value: "report.reports.view" },
-      { label: "Export", value: "report.reports.export" }
+      { label: "View", value: "reports.view" },
+      { label: "Export", value: "reports.export" }
     ]
   },
   {
     module: "Audit",
     permissions: [
-      { label: "View", value: "asset.register.view" },
-      { label: "Manage", value: "asset.register.edit" }
+      { label: "View", value: "auditsession.view" },
+      { label: "Manage", value: "auditsession.manage" }
     ]
   },
   {
     module: "System Settings",
     permissions: [
-      { label: "Access", value: "settings.preferences.view" }
+      { label: "Access", value: "setup.manage" }
     ]
   },
   {
     module: "Procurements",
     permissions: [
-      { label: "Manage", value: "request.procurement.edit" }
+      { label: "Manage", value: "procurements.manage" }
     ]
   },
   {
     module: "Work Orders",
     permissions: [
-      { label: "Manage", value: "maintenance.logs.edit" }
+      { label: "Manage", value: "workorders.manage" }
     ]
   },
   {
     module: "QR Console",
     permissions: [
-      { label: "Generate", value: "asset.register.export" },
-      { label: "Scan", value: "asset.register.view" }
+      { label: "Generate", value: "qrconsole.generate" },
+      { label: "Scan", value: "qrconsole.scan" }
     ]
   },
   {
     module: "Tracking",
     permissions: [
-      { label: "View Map", value: "tracking.map.view" }
+      { label: "View Map", value: "tracking.view" }
     ]
   }
 ];
@@ -243,33 +253,37 @@ export const DEFAULT_ROLE_CONFIG = {
       "Tracking",
     ],
     permissions: [
-      "dashboard.overview.view",
-      "asset.register.view",
-      "asset.register.create",
-      "asset.register.edit",
-      "asset.register.delete",
-      "asset.assignments.assign",
-      "asset.register.export",
-      "asset.register.view",
-      "request.procurement.view",
-      "request.procurement.approve",
-      "request.procurement.reject",
-      "inventory.stock.view",
-      "inventory.stock.edit",
-      "maintenance.logs.view",
-      "maintenance.logs.edit",
-      "warranty.tracker.view",
-      "warranty.tracker.edit",
-      "employee.portal.view",
-      "employee.users.edit",
-      "office.offices.view",
-      "office.offices.edit",
-      "report.reports.view",
-      "report.reports.export",
-      "asset.register.view",
-      "request.procurement.edit",
-      "maintenance.logs.edit",
-      "settings.preferences.view",
+      "dashboard.view",
+      "assets.view",
+      "assets.create",
+      "assets.edit",
+      "assets.delete",
+      "assignments.manage",
+      "qrconsole.generate",
+      "qrconsole.scan",
+      "requests.view",
+      "requests.create",
+      "approvals.approve",
+      "approvals.reject",
+      "inventory.view",
+      "inventory.manage",
+      "maintenance.view",
+      "maintenance.manage",
+      "warranty.view",
+      "warranty.manage",
+      "employeeportal.view",
+      "usersaccess.manage",
+      "offices.view",
+      "offices.manage",
+      "reports.view",
+      "reports.export",
+      "auditsession.view",
+      "auditsession.manage",
+      "setup.manage",
+      "procurements.manage",
+      "workorders.manage",
+      "tracking.view",
+      "myassets.view",
     ],
   },
   ADMIN: {
@@ -298,33 +312,37 @@ export const DEFAULT_ROLE_CONFIG = {
       "Preferences",
     ],
     permissions: [
-      "dashboard.overview.view",
-      "asset.register.view",
-      "asset.register.create",
-      "asset.register.edit",
-      "asset.register.delete",
-      "asset.assignments.assign",
-      "asset.register.export",
-      "asset.register.view",
-      "request.procurement.view",
-      "request.procurement.approve",
-      "request.procurement.reject",
-      "inventory.stock.view",
-      "inventory.stock.edit",
-      "maintenance.logs.view",
-      "maintenance.logs.edit",
-      "warranty.tracker.view",
-      "warranty.tracker.edit",
-      "employee.portal.view",
-      "employee.users.edit",
-      "office.offices.view",
-      "office.offices.edit",
-      "report.reports.view",
-      "report.reports.export",
-      "asset.register.view",
-      "request.procurement.edit",
-      "maintenance.logs.edit",
-      "settings.preferences.view",
+      "dashboard.view",
+      "assets.view",
+      "assets.create",
+      "assets.edit",
+      "assets.delete",
+      "assignments.manage",
+      "qrconsole.generate",
+      "qrconsole.scan",
+      "requests.view",
+      "requests.create",
+      "approvals.approve",
+      "approvals.reject",
+      "inventory.view",
+      "inventory.manage",
+      "maintenance.view",
+      "maintenance.manage",
+      "warranty.view",
+      "warranty.manage",
+      "employeeportal.view",
+      "usersaccess.manage",
+      "offices.view",
+      "offices.manage",
+      "reports.view",
+      "reports.export",
+      "auditsession.view",
+      "auditsession.manage",
+      "setup.manage",
+      "procurements.manage",
+      "workorders.manage",
+      "tracking.view",
+      "myassets.view",
     ],
   },
   IT_STAFF: {
@@ -332,49 +350,98 @@ export const DEFAULT_ROLE_CONFIG = {
       "Dashboard",
       "Assets",
       "QR Console",
-      "Requests",
-      "Procurements",
-      "Inventory",
-      "Work Orders",
+      "Tracking",
       "Assignments",
       "Maintenance",
       "Warranty",
-      "Reports",
-      "Masters",
-      "Setup",
-      "Vendors",
-      "Products",
+      "Work Orders",
+      "Inventory",
+      "Requests",
+      "My Assets",
     ],
     permissions: [
-      "dashboard.overview.view",
-      "asset.register.view",
-      "asset.register.create",
-      "asset.register.edit",
-      "asset.assignments.assign",
-      "asset.register.export",
-      "asset.register.view",
-      "request.procurement.view",
-      "request.procurement.create",
-      "inventory.stock.view",
-      "maintenance.logs.view",
-      "maintenance.logs.edit",
-      "warranty.tracker.view",
-      "report.reports.view",
-      "request.procurement.edit",
-      "maintenance.logs.edit",
+      "dashboard.view",
+      "assets.view",
+      "assets.create",
+      "assets.edit",
+      "assets.delete",
+      "assignments.manage",
+      "qrconsole.generate",
+      "qrconsole.scan",
+      "tracking.view",
+      "maintenance.view",
+      "maintenance.manage",
+      "warranty.view",
+      "warranty.manage",
+      "inventory.view",
+      "inventory.manage",
+      "requests.view",
+      "requests.create",
+      "myassets.view",
+      "workorders.manage",
+      "employeeportal.view",
     ],
   },
   MANAGER: {
-    sidebarAccess: ["Dashboard", "Assets", "Requests", "Approvals", "Reports", "Setup", "Products"],
-    permissions: ["dashboard.overview.view", "asset.register.view", "request.procurement.view", "request.procurement.approve", "request.procurement.reject", "report.reports.view"],
+    sidebarAccess: [
+      "Dashboard",
+      "Assets",
+      "Requests",
+      "Approvals",
+      "Reports",
+      "My Assets",
+      "Employee Portal",
+      "Assignments",
+    ],
+    permissions: [
+      "dashboard.view",
+      "assets.view",
+      "assets.create",
+      "assets.edit",
+      "assets.delete",
+      "requests.view",
+      "requests.create",
+      "approvals.approve",
+      "approvals.reject",
+      "reports.view",
+      "assignments.manage",
+      "myassets.view",
+      "employeeportal.view",
+    ],
   },
   EMPLOYEE: {
-    sidebarAccess: ["Employee Portal", "Requests", "Warranty", "QR Console", "My Assets"],
-    permissions: ["employee.portal.view", "asset.register.view", "request.procurement.create", "request.procurement.view", "warranty.tracker.view", "asset.register.view"],
+    sidebarAccess: [
+      "My Assets",
+      "Requests",
+      "Employee Portal",
+      "QR Console",
+    ],
+    permissions: [
+      "myassets.view",
+      "requests.create",
+      "requests.view",
+      "qrconsole.scan",
+      "qrconsole.generate",
+      "employeeportal.view",
+    ],
   },
   AUDITOR: {
-    sidebarAccess: ["Audit Session", "Reports", "Assets", "Setup", "Products"],
-    permissions: ["asset.register.view", "report.reports.view", "asset.register.view"],
+    sidebarAccess: [
+      "Dashboard",
+      "Assets",
+      "Audit Session",
+      "Reports",
+      "My Assets",
+    ],
+    permissions: [
+      "dashboard.view",
+      "assets.view",
+      "reports.view",
+      "auditsession.view",
+      "auditsession.manage",
+      "myassets.view",
+      "employeeportal.view",
+    ],
   },
 };
 
@@ -412,37 +479,37 @@ export const ROUTE_ROLES = {
 };
 
 export const ROUTE_PERMISSIONS = {
-  "/": ["dashboard.overview.view"],
-  "/assets": ["asset.register.view"],
-  "/requests": ["request.procurement.view"],
-  "/approvals": ["request.procurement.approve"],
-  "/inventory": ["inventory.stock.view", "inventory.stock.edit"],
-  "/employees": ["employee.portal.view"],
-  "/assignments": ["asset.assignments.assign"],
-  "/maintenance": ["maintenance.logs.view", "maintenance.logs.edit"],
-  "/warranty": ["warranty.tracker.view", "warranty.tracker.edit"],
-  "/offices": ["office.offices.view", "office.offices.edit"],
-  "/audit": ["asset.register.view", "asset.register.edit"],
-  "/reports": ["report.reports.view"],
-  "/roles": ["employee.users.edit"],
-  "/master-editor": ["settings.preferences.view", "employee.users.edit"],
-  "/masters": ["settings.preferences.view", "employee.users.edit"],
-  "/masters/asset-form": ["asset.register.create", "asset.register.edit", "asset.register.view"],
-  "/masters/request-form": ["request.procurement.view"],
-  "/masters/procurement-form": ["request.procurement.edit"],
+  "/": ["dashboard.view"],
+  "/assets": ["assets.view"],
+  "/requests": ["requests.view"],
+  "/approvals": ["approvals.approve"],
+  "/inventory": ["inventory.view", "inventory.manage"],
+  "/employees": ["employeeportal.view"],
+  "/assignments": ["assignments.manage"],
+  "/maintenance": ["maintenance.view", "maintenance.manage"],
+  "/warranty": ["warranty.view", "warranty.manage"],
+  "/offices": ["offices.view", "offices.manage"],
+  "/audit": ["auditsession.view", "auditsession.manage"],
+  "/reports": ["reports.view"],
+  "/roles": ["usersaccess.manage"],
+  "/master-editor": ["setup.manage", "usersaccess.manage"],
+  "/masters": ["setup.manage", "usersaccess.manage"],
+  "/masters/asset-form": ["assets.create", "assets.edit", "assets.view"],
+  "/masters/request-form": ["requests.view"],
+  "/masters/procurement-form": ["procurements.manage"],
   "/masters/categories": [],
-  "/add-request": ["request.procurement.create"],
-  "/edit-request": ["request.procurement.create"],
-  "/asset-details": ["asset.register.view"],
+  "/add-request": ["requests.create"],
+  "/edit-request": ["requests.create"],
+  "/asset-details": ["assets.view"],
   "/profile": [],
-  "/procurements": ["request.procurement.edit"],
-  "/work-orders": ["maintenance.logs.edit"],
-  "/setup/users": ["employee.users.edit"],
-  "/setup/vendors": ["request.procurement.edit", "employee.users.edit"],
-  "/setup/products": ["asset.register.view"],
-  "/setup/preferences": ["settings.preferences.view"],
-  "/tracking": ["tracking.map.view"],
-  "/my-assets": [],
+  "/procurements": ["procurements.manage"],
+  "/work-orders": ["workorders.manage"],
+  "/setup/users": ["usersaccess.manage"],
+  "/setup/vendors": ["procurements.manage", "usersaccess.manage"],
+  "/setup/products": ["assets.view"],
+  "/setup/preferences": ["setup.manage"],
+  "/tracking": ["tracking.view"],
+  "/my-assets": ["myassets.view"],
 };
 
 export const parseAccessLabels = (access = "") =>

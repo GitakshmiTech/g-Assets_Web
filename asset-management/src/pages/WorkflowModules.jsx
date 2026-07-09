@@ -26,15 +26,16 @@ import {
 import { useToast } from "../components/toast/toastStore";
 import { fetchRecommendedScanBaseUrl, getQrClientOrigin, getScanBaseUrl } from "../apis/apiConfig";
 import apiInstance from "../apis/apiConfig";
-import { FaExclamationTriangle, FaTimes } from "react-icons/fa";
+import { FaExclamationTriangle, FaTimes, FaHome, FaLaptop, FaClipboardCheck, FaCheckSquare, FaShoppingCart, FaBoxes, FaWrench, FaUserFriends, FaExchangeAlt, FaTools, FaBell, FaBuilding, FaQrcode, FaChartBar, FaShieldAlt, FaMapMarkerAlt, FaKey, FaUsers } from "react-icons/fa";
 import { getOffices, saveOffice, deleteOffice } from "../utils/officeStore";
 import { createRole, deleteRole, fetchRoles, updateRole } from "../utils/roleApi";
-import { formatAccessLabels, MENU_ACCESS_OPTIONS, parseAccessLabels, PERMISSION_OPTIONS } from "../utils/permissions";
+import { formatAccessLabels, MENU_ACCESS_OPTIONS, parseAccessLabels, PERMISSION_OPTIONS, normalizeRoleValue } from "../utils/permissions";
 import { exportReportCsv, exportReportPdf, exportReportWord } from "../utils/reportExport";
 import { pushAppNotification } from "../utils/notificationStore";
 import ConfirmDeleteModal from "../components/common/ConfirmDeleteModal";
 import PermissionGrid from "../components/common/PermissionGrid";
 import { usePermissions } from "../hooks/usePermissions";
+import { fetchCurrentUser } from "../store/slices/authSlice";
 import "./RolesPage.css";
 import "./WorkOrdersPage.css";
 
@@ -102,7 +103,25 @@ export function Requests() {
   const dispatch = useDispatch();
   const { showToast } = useToast();
   const navigate = useNavigate();
-  const requests = getRequestRecords(assetListData);
+  const { user } = useSelector((state) => state.auth);
+
+  const isEmployee = user?.role === "EMPLOYEE";
+  const userEmail = user?.email?.toLowerCase();
+  const userName = user?.name?.toLowerCase();
+  const userEmpId = user?.employeeId?.toLowerCase();
+
+  const requests = getRequestRecords(assetListData).filter((item) => {
+    if (!isEmployee) return true;
+    const itemEmail = item.employeeEmail?.toLowerCase();
+    const itemReqBy = item.requestedBy?.toLowerCase();
+    const itemEmpId = item.employeeId?.toLowerCase();
+
+    return (
+      (userEmail && itemEmail === userEmail) ||
+      (userName && itemReqBy === userName) ||
+      (userEmpId && itemEmpId === userEmpId)
+    );
+  });
   const { hasPermission, isAdmin } = usePermissions();
 
   const removeRequest = async (id) => {
@@ -836,8 +855,9 @@ export function Audit() {
   const { user } = useSelector((state) => state.auth);
   const [verifyingId, setVerifyingId] = useState("");
   const [selectedAsset, setSelectedAsset] = useState(null);
+  const inventoryAssets = getInventoryAssets(assetListData);
 
-  const auditRows = assetListData.map((asset) => ({
+  const auditRows = inventoryAssets.map((asset) => ({
     ...asset,
     lastAudit: asset.auditLogs?.[asset.auditLogs.length - 1],
   }));
@@ -897,7 +917,7 @@ export function Audit() {
     <>
       <PageTitle eyebrow="Audit" title="QR Verification & Audit Logs" description="Scan QR codes, verify physical assets, and identify missing inventory." />
       <KpiGrid items={[
-        { label: "Assets", value: assetListData.length },
+        { label: "Assets", value: inventoryAssets.length },
         { label: "Verified", value: auditRows.filter((asset) => asset.lastAudit?.physicalStatus === "Verified").length },
         { label: "Pending", value: auditRows.filter((asset) => !asset.lastAudit).length },
         { label: "Missing/Damaged", value: auditRows.filter((asset) => ["Missing", "Damaged", "Rejected"].includes(asset.lastAudit?.physicalStatus)).length },
@@ -1090,7 +1110,8 @@ export function Reports() {
   const { showToast } = useToast();
   const exportMenuRef = useRef(null);
   const [exportMenuOpen, setExportMenuOpen] = useState(false);
-  const repairs = assetListData.flatMap((asset) => asset.repairHistory || []);
+  const inventoryAssets = getInventoryAssets(assetListData);
+  const repairs = inventoryAssets.flatMap((asset) => asset.repairHistory || []);
 
   useEffect(() => {
     const handleOutsideClick = (event) => {
@@ -1104,9 +1125,9 @@ export function Reports() {
 
   const handleExport = (format) => {
     try {
-      if (format === "csv") exportReportCsv(assetListData);
-      if (format === "word") exportReportWord(assetListData);
-      if (format === "pdf") exportReportPdf(assetListData);
+      if (format === "csv") exportReportCsv(inventoryAssets);
+      if (format === "word") exportReportWord(inventoryAssets);
+      if (format === "pdf") exportReportPdf(inventoryAssets);
       setExportMenuOpen(false);
       showToast({
         title: "Report exported",
@@ -1163,376 +1184,677 @@ export function Reports() {
           </div>
         )}
         items={[
-          { label: "Total Assets", value: assetListData.length },
-          { label: "Total Repair Cost", value: currency(assetListData.reduce((sum, asset) => sum + repairCost(asset), 0)) },
+          { label: "Total Assets", value: inventoryAssets.length },
+          { label: "Total Repair Cost", value: currency(inventoryAssets.reduce((sum, asset) => sum + repairCost(asset), 0)) },
           { label: "Repair Records", value: repairs.length },
         ]} 
       />
       <div className="chart-grid">
-        <MiniBars title="Office-wise Asset Count" data={groupByCount(assetListData, "officeName")} />
-        <MiniBars title="Category-wise Asset Count" data={groupByCount(assetListData, "category")} />
+        <MiniBars title="Office-wise Asset Count" data={groupByCount(inventoryAssets, "officeName")} />
+        <MiniBars title="Category-wise Asset Count" data={groupByCount(inventoryAssets, "category")} />
       </div>
-      <DataTable columns={assetColumns} rows={assetListData} />
+      <DataTable columns={assetColumns} rows={inventoryAssets} />
     </>
   );
 }
 
 export function Roles() {
+  const dispatch = useDispatch();
   const { showToast } = useToast();
   const [roles, setRoles] = useState([]);
-  const [newRole, setNewRole] = useState({ label: "", sidebarAccess: [], permissions: [] });
-  const [editingKey, setEditingKey] = useState("");
-  const [editForm, setEditForm] = useState({ label: "", sidebarAccess: [], permissions: [] });
-  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [selectedRoleKey, setSelectedRoleKey] = useState("");
+  const [permissions, setPermissions] = useState([]);
+  const [sidebarAccess, setSidebarAccess] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [selectedModule, setSelectedModule] = useState(null);
+  const [tempPermissions, setTempPermissions] = useState([]);
+  const [isAddingRole, setIsAddingRole] = useState(false);
+  const [newRoleName, setNewRoleName] = useState("");
   const [saving, setSaving] = useState(false);
-  const [showAddRole, setShowAddRole] = useState(false);
 
-  const loadRoles = async () => {
+  const ACCESS_MODULES = [
+    {
+      key: "DASHBOARD",
+      label: "Dashboard",
+      icon: <FaHome />,
+      nodes: [
+        { label: "Dashboard Overview", view: "dashboard.view" }
+      ]
+    },
+    {
+      key: "ASSETS",
+      label: "Assets",
+      icon: <FaLaptop />,
+      nodes: [
+        { label: "Asset Register", view: "assets.view", create: "assets.create", edit: "assets.edit", delete: "assets.delete" }
+      ]
+    },
+    {
+      key: "MY_ASSETS",
+      label: "My Assets",
+      icon: <FaLaptop />,
+      nodes: [
+        { label: "My Assets View", view: "myassets.view" }
+      ]
+    },
+    {
+      key: "REQUESTS",
+      label: "Requests",
+      icon: <FaClipboardCheck />,
+      nodes: [
+        { label: "Requests List", view: "requests.view", create: "requests.create" }
+      ]
+    },
+    {
+      key: "APPROVALS",
+      label: "Approvals",
+      icon: <FaCheckSquare />,
+      nodes: [
+        { label: "Approvals Queue", view: "approvals.approve", edit: "approvals.reject" }
+      ]
+    },
+    {
+      key: "PROCUREMENTS",
+      label: "Procurements",
+      icon: <FaShoppingCart />,
+      nodes: [
+        { label: "Purchase Orders", view: "procurements.manage" }
+      ]
+    },
+    {
+      key: "INVENTORY",
+      label: "Inventory",
+      icon: <FaBoxes />,
+      nodes: [
+        { label: "Stock Inventory", view: "inventory.view", edit: "inventory.manage" }
+      ]
+    },
+    {
+      key: "WORK_ORDERS",
+      label: "Work Orders",
+      icon: <FaWrench />,
+      nodes: [
+        { label: "Maintenance Tickets", view: "workorders.manage" }
+      ]
+    },
+    {
+      key: "EMPLOYEE_PORTAL",
+      label: "Employee Portal",
+      icon: <FaUserFriends />,
+      nodes: [
+        { label: "Employee Portal View", view: "employeeportal.view" }
+      ]
+    },
+    {
+      key: "ASSIGNMENTS",
+      label: "Assignments",
+      icon: <FaExchangeAlt />,
+      nodes: [
+        { label: "Asset Assignments", view: "assignments.manage" }
+      ]
+    },
+    {
+      key: "MAINTENANCE",
+      label: "Maintenance",
+      icon: <FaTools />,
+      nodes: [
+        { label: "Repair & Tickets Logs", view: "maintenance.view", edit: "maintenance.manage" }
+      ]
+    },
+    {
+      key: "WARRANTY",
+      label: "Warranty",
+      icon: <FaBell />,
+      nodes: [
+        { label: "Warranty Tracker", view: "warranty.view", edit: "warranty.manage" }
+      ]
+    },
+    {
+      key: "OFFICES",
+      label: "Offices",
+      icon: <FaBuilding />,
+      nodes: [
+        { label: "Branch Locations", view: "offices.view", edit: "offices.manage" }
+      ]
+    },
+    {
+      key: "AUDIT_SESSION",
+      label: "Audit Session",
+      icon: <FaQrcode />,
+      nodes: [
+        { label: "Audit Session Logs", view: "auditsession.view", edit: "auditsession.manage" }
+      ]
+    },
+    {
+      key: "REPORTS",
+      label: "Reports",
+      icon: <FaChartBar />,
+      nodes: [
+        { label: "Reports View", view: "reports.view", edit: "reports.export" }
+      ]
+    },
+    {
+      key: "QR_CONSOLE",
+      label: "QR Console",
+      icon: <FaQrcode />,
+      nodes: [
+        { label: "QR Code Generation", view: "qrconsole.generate", edit: "qrconsole.scan" }
+      ]
+    },
+    {
+      key: "TRACKING",
+      label: "Tracking",
+      icon: <FaMapMarkerAlt />,
+      nodes: [
+        { label: "Asset Map Tracking", view: "tracking.view" }
+      ]
+    },
+    {
+      key: "USERS_ACCESS",
+      label: "Users & Access",
+      icon: <FaShieldAlt />,
+      nodes: [
+        { label: "Users & Access View", view: "usersaccess.manage" }
+      ]
+    },
+    {
+      key: "SETUP",
+      label: "Setup",
+      icon: <FaTools />,
+      nodes: [
+        { label: "System Preferences", view: "setup.manage" }
+      ]
+    }
+  ];
+
+  const [selectedUserId, setSelectedUserId] = useState("");
+
+  const allPossiblePerms = useMemo(() => {
+    const perms = ACCESS_MODULES.flatMap((mod) =>
+      mod.nodes.flatMap((node) => [node.view, node.create, node.edit, node.delete].filter(Boolean))
+    );
+    return [...new Set(perms)];
+  }, []);
+
+  const totalPossiblePermissions = allPossiblePerms.length;
+
+  const loadRolesAndUsers = async () => {
     try {
       const data = await fetchRoles();
-      setRoles(
-        data.map((role) => {
-          const sidebarAccess = role.sidebarAccess?.length ? role.sidebarAccess : parseAccessLabels(role.access);
-          return {
-            id: role.key,
-            key: role.key,
-            role: role.label,
-            sidebarAccess,
-            permissions: role.permissions || [],
-            access: formatAccessLabels(sidebarAccess) || "-",
-            isSystem: Boolean(role.isSystem),
-          };
-        }),
-      );
-    } catch (error) {
-      showToast({ title: "fetchRoles failed", message: String(error.message || error), type: "error" });
-      setRoles([]);
+      setRoles(data);
+
+      const savedRoleKey = sessionStorage.getItem("active_role_key");
+      const savedUserId = sessionStorage.getItem("active_user_id");
+
+      if (savedRoleKey && data.some((r) => r.key === savedRoleKey)) {
+        setSelectedRoleKey(savedRoleKey);
+        if (savedUserId) {
+          setSelectedUserId(savedUserId);
+        }
+      } else if (!selectedRoleKey && data.length > 0) {
+        const defaultRole = data.find((r) => r.key === "MANAGER") || data[0];
+        setSelectedRoleKey(defaultRole.key);
+      }
+
+      const userRes = await apiInstance.get("/users");
+      if (userRes.data.success) {
+        setUsers(userRes.data.users || []);
+      }
+    } catch (err) {
+      console.error("Failed to load access page config", err);
     }
   };
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadRoles();
+    loadRolesAndUsers();
   }, []);
 
-  const addRole = async (event) => {
-    event.preventDefault();
-    if (!newRole.label.trim()) {
-      showToast({ title: "Role required", message: "Enter a role name.", type: "error" });
-      return;
-    }
-    if (!newRole.sidebarAccess.length) {
-      showToast({ title: "Access required", message: "Select at least one visible menu for this role.", type: "error" });
-      return;
-    }
+  useEffect(() => {
+    if (!selectedRoleKey) return;
 
-    setSaving(true);
-    try {
-      await createRole({
-        label: newRole.label.trim(),
-        sidebarAccess: newRole.sidebarAccess,
-        permissions: newRole.permissions,
-      });
-      setNewRole({ label: "", sidebarAccess: [], permissions: [] });
-      setShowAddRole(false);
-      await loadRoles();
-      showToast({ title: "Role added", message: "New role is available in registration dropdown." });
-    } catch (error) {
-      showToast({
-        title: "Unable to add role",
-        message: error?.response?.data?.message || error?.message || "Try again.",
-        type: "error",
-      });
-    } finally {
-      setSaving(false);
+    const matchedRole = roles.find((r) => r.key === selectedRoleKey);
+    if (!selectedUserId) {
+      if (matchedRole) {
+        setPermissions(matchedRole.permissions || []);
+        setSidebarAccess(matchedRole.sidebarAccess || []);
+      }
+    } else {
+      const matchedUser = users.find((u) => u.id === selectedUserId);
+      if (matchedUser) {
+        if (matchedUser.hasCustomPermissions) {
+          setPermissions(matchedUser.permissions || []);
+          setSidebarAccess(matchedUser.sidebarAccess || []);
+        } else if (matchedRole) {
+          setPermissions(matchedRole.permissions || []);
+          setSidebarAccess(matchedRole.sidebarAccess || []);
+        }
+      }
     }
+  }, [selectedRoleKey, selectedUserId, users, roles]);
+
+  const handleRoleChange = (e) => {
+    const val = e.target.value;
+    setSelectedRoleKey(val);
+    setSelectedUserId("");
+    sessionStorage.setItem("active_role_key", val);
+    sessionStorage.removeItem("active_user_id");
   };
 
-  const startEdit = (row) => {
-    setEditingKey(row.key);
-    setEditForm({
-      label: row.role === "-" ? "" : row.role,
-      sidebarAccess: row.sidebarAccess || [],
-      permissions: row.permissions || [],
+  const getCardAccess = (mod) => {
+    const modPerms = mod.nodes.flatMap((node) => [node.view, node.create, node.edit, node.delete].filter(Boolean));
+    if (modPerms.length === 0) return 0;
+    const activeCount = modPerms.filter((p) => permissions.includes(p)).length;
+    return Math.round((activeCount / modPerms.length) * 100);
+  };
+
+  const updateSidebarAccess = (newPermissions) => {
+    const nextSidebar = [];
+    ACCESS_MODULES.forEach((mod) => {
+      const modPerms = mod.nodes.flatMap((node) => [node.view, node.create, node.edit, node.delete].filter(Boolean));
+      const hasAny = modPerms.some((p) => newPermissions.includes(p));
+      if (hasAny) {
+        nextSidebar.push(mod.label);
+      }
     });
+    
+    if (nextSidebar.includes("Setup")) {
+      nextSidebar.push("Users", "Vendors", "Products", "Preferences");
+    }
+    if (nextSidebar.includes("Assets")) {
+      nextSidebar.push("Masters");
+    }
+    return nextSidebar;
   };
 
-  const cancelEdit = () => {
-    setEditingKey("");
-    setEditForm({ label: "", sidebarAccess: [], permissions: [] });
+  const handleEnableAllAccess = () => {
+    setPermissions(allPossiblePerms);
+    setSidebarAccess(updateSidebarAccess(allPossiblePerms));
+    showToast({ title: "Access Enabled", message: "All permissions selected. Click 'Save All Changes' to save." });
   };
 
-  const saveEdit = async (row) => {
-    if (!editForm.label.trim()) {
-      showToast({ title: "Role required", message: "Enter a role name.", type: "error" });
-      return;
-    }
-    if (!editForm.sidebarAccess.length) {
-      showToast({ title: "Access required", message: "Select at least one visible menu for this role.", type: "error" });
-      return;
-    }
-
+  const handleSaveAllChanges = async () => {
     setSaving(true);
     try {
-      await updateRole(row.key, {
-        label: editForm.label.trim(),
-        sidebarAccess: editForm.sidebarAccess,
-        permissions: editForm.permissions,
-      });
-      cancelEdit();
-      await loadRoles();
-      showToast({ title: "Role updated", message: "Role changes saved successfully." });
+      if (selectedUserId) {
+        await apiInstance.put(`/users/${selectedUserId}`, {
+          permissions,
+          sidebarAccess,
+          hasCustomPermissions: true,
+        });
+        showToast({ title: "Success", message: "User custom permissions saved successfully." });
+      } else {
+        const selectedRole = roles.find((r) => r.key === selectedRoleKey);
+        if (!selectedRole) return;
+
+        await updateRole(selectedRoleKey, {
+          label: selectedRole.label,
+          permissions,
+          sidebarAccess,
+        });
+        showToast({ title: "Success", message: "All role changes saved successfully." });
+      }
+      
+      // Load fresh state locally
+      await loadRolesAndUsers();
+      // Sync current logged in user session (if we modified ourselves)
+      dispatch(fetchCurrentUser());
+      // Inform parent containers (like AppLayout side navigation & RequireAuth router) to re-evaluate in real-time
+      window.dispatchEvent(new Event("roles-updated"));
     } catch (error) {
-      showToast({
-        title: "Unable to update role",
-        message: error?.response?.data?.message || error?.message || "Try again.",
-        type: "error",
-      });
+      showToast({ title: "Error", message: "Failed to save permissions.", type: "error" });
     } finally {
       setSaving(false);
     }
   };
 
-  const removeRole = async () => {
-    const row = deleteTarget;
-    if (!row) return;
-
+  const handleResetToRoleDefault = async () => {
+    if (!window.confirm("Are you sure you want to reset this user to role default permissions?")) {
+      return;
+    }
     setSaving(true);
     try {
-      await deleteRole(row.key);
-      if (editingKey === row.key) cancelEdit();
-      setDeleteTarget(null);
-      await loadRoles();
-      showToast({ title: "Role deleted", message: "Role removed from the list." });
-    } catch (error) {
-      showToast({
-        title: "Unable to delete role",
-        message: error?.response?.data?.message || error?.message || "Try again.",
-        type: "error",
+      await apiInstance.put(`/users/${selectedUserId}`, {
+        permissions: [],
+        sidebarAccess: [],
+        hasCustomPermissions: false,
       });
+      showToast({ title: "Success", message: "User reset to role defaults successfully." });
+      sessionStorage.removeItem("active_user_id");
+      
+      // Load fresh state locally
+      await loadRolesAndUsers();
+      // Sync current logged in user session (if we modified ourselves)
+      dispatch(fetchCurrentUser());
+      // Inform parent containers to re-evaluate
+      window.dispatchEvent(new Event("roles-updated"));
+    } catch (error) {
+      showToast({ title: "Error", message: "Failed to reset user permissions.", type: "error" });
     } finally {
       setSaving(false);
     }
   };
 
-  const updateSelection = (currentSelection, value) => {
-    const selected = parseAccessLabels(currentSelection);
-    return selected.includes(value)
-      ? selected.filter((item) => item !== value)
-      : [...selected, value];
+  const handleOpenCard = (mod) => {
+    setSelectedModule(mod);
+    setTempPermissions([...permissions]);
   };
 
-  const renderAccessPicker = (id, value, onChange) => {
-    const options = MENU_ACCESS_OPTIONS;
-    const selected = parseAccessLabels(value);
-    const selectedLabels = selected.map((item) => options.find((option) => option.label === item))
-      .filter(Boolean)
-      .map((option) => option.label);
-    const summary = selectedLabels.length ? formatAccessLabels(selectedLabels) : "Select visible menus";
-
-    return (
-      <details className="role-access-dropdown" style={{ width: "100%", maxWidth: "400px" }}>
-        <summary id={id}>
-          <span className="role-dropdown-summary-text">{summary}</span>
-        </summary>
-        <div className="role-access-menu" aria-labelledby={id} style={{ maxHeight: "300px", overflowY: "auto" }}>
-          {options.map((option) => (
-            <label key={option.label} className="role-access-option">
-              <input
-                type="checkbox"
-                checked={selected.includes(option.label)}
-                onChange={() => onChange(updateSelection(value, option.label))}
-              />
-              <span>{option.label}</span>
-            </label>
-          ))}
-        </div>
-      </details>
-    );
+  const handleToggleTempPermission = (permVal, checked) => {
+    if (checked) {
+      setTempPermissions((prev) => [...new Set([...prev, permVal])]);
+    } else {
+      setTempPermissions((prev) => prev.filter((p) => p !== permVal));
+    }
   };
+
+  const handleAllRowTempPermission = (node, selectAll) => {
+    const nodePerms = [node.view, node.create, node.edit, node.delete].filter(Boolean);
+    if (selectAll) {
+      setTempPermissions((prev) => [...new Set([...prev, ...nodePerms])]);
+    } else {
+      setTempPermissions((prev) => prev.filter((p) => !nodePerms.includes(p)));
+    }
+  };
+
+  const handleEnableAllForModule = (mod) => {
+    const modPerms = mod.nodes.flatMap((node) => [node.view, node.create, node.edit, node.delete].filter(Boolean));
+    setTempPermissions((prev) => [...new Set([...prev, ...modPerms])]);
+  };
+
+  const handleSaveModalChanges = () => {
+    setPermissions(tempPermissions);
+    setSidebarAccess(updateSidebarAccess(tempPermissions));
+    setSelectedModule(null);
+    showToast({ title: "Changes applied", message: "Changes applied locally. Click 'Save All Changes' to submit." });
+  };
+
+  const handleAddRoleSubmit = async (e) => {
+    e.preventDefault();
+    if (!newRoleName.trim()) return;
+
+    try {
+      const res = await createRole({
+        label: newRoleName.trim(),
+        permissions: [],
+        sidebarAccess: [],
+      });
+      showToast({ title: "Success", message: "New role created successfully." });
+      setSelectedRoleKey(res.role.key);
+      setNewRoleName("");
+      setIsAddingRole(false);
+      await loadRolesAndUsers();
+    } catch (err) {
+      showToast({ title: "Error", message: err.response?.data?.message || "Failed to create role", type: "error" });
+    }
+  };
+
+  const handleDeleteRole = async () => {
+    const selectedRole = roles.find((r) => r.key === selectedRoleKey);
+    if (!selectedRole) return;
+    if (selectedRole.isSystem) {
+      showToast({ title: "Error", message: "System roles cannot be deleted.", type: "error" });
+      return;
+    }
+
+    if (!window.confirm(`Are you sure you want to delete the role "${selectedRole.label}"?`)) {
+      return;
+    }
+
+    try {
+      await deleteRole(selectedRoleKey);
+      showToast({ title: "Success", message: "Role deleted successfully." });
+      setSelectedRoleKey("");
+      setSelectedUserId("");
+      sessionStorage.removeItem("active_role_key");
+      sessionStorage.removeItem("active_user_id");
+      await loadRolesAndUsers();
+    } catch (err) {
+      showToast({ title: "Error", message: err.response?.data?.message || "Failed to delete role", type: "error" });
+    }
+  };
+
+  const selectedRole = roles.find((r) => r.key === selectedRoleKey);
+  const roleUsers = users.filter((u) => normalizeRoleValue(u.role) === selectedRoleKey);
+  const employeeCount = roleUsers.length;
 
   return (
-    <>
-      <PageTitle
-        eyebrow="Roles"
-        title="Role-Based Access Control"
-        description="Manage role visibility, access scope, and registration options from one place."
-      />
-      
-      <KpiGrid 
-        action={
-          <button 
-            type="button" 
-            className="module-button" 
-            style={{ backgroundColor: "var(--color-primary)", color: "#fff", border: "none", display: "flex", gap: "8px", alignItems: "center" }}
-            onClick={() => setShowAddRole(!showAddRole)}
-          >
-            {showAddRole ? "Cancel Add Role" : "+ Add New Role"}
+    <div className="access-grid-container">
+      <div className="access-header-row">
+        <div className="access-header-left">
+          <h2>Access & Permissions</h2>
+          <p>Configure dynamic cards and functional role permissions across all modules.</p>
+        </div>
+        <div className="access-header-actions">
+          <button type="button" className="access-btn access-btn-secondary" onClick={handleEnableAllAccess}>
+            <FaKey /> Enable All Access
           </button>
-        }
-        items={[
-          { label: "Total Roles", value: roles.length },
-          { label: "System Roles", value: roles.filter((role) => role.isSystem).length },
-          { label: "Custom Roles", value: roles.filter((role) => !role.isSystem).length },
-        ]} 
-      />
 
-      {showAddRole && (
-        <section 
-          className="form-section fade-in" 
-          style={{ 
-            background: "var(--bg-surface)", 
-            border: "1px solid var(--border-color)", 
-            borderRadius: "var(--radius-lg)", 
-            padding: "24px", 
-            marginBottom: "24px",
-            boxShadow: "var(--shadow-md)"
-          }}
-        >
-          <h3 style={{ margin: "0 0 20px", fontSize: "18px", fontWeight: "600", color: "var(--text-main)", borderBottom: "1px solid var(--border-color)", paddingBottom: "12px" }}>Create New Role</h3>
-          <form onSubmit={addRole} style={{ display: "flex", flexDirection: "column", gap: "24px" }}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <label htmlFor="new-role-name" style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Role Name</label>
-                <input
-                  id="new-role-name"
-                  className="custom-input"
-                  style={{ height: "40px", padding: "0 14px", fontSize: "14px", boxSizing: "border-box", borderRadius: "var(--radius-md)", border: "1px solid var(--border-color)" }}
-                  placeholder="e.g. HR Manager"
-                  value={newRole.label}
-                  onChange={(e) => setNewRole({ ...newRole, label: e.target.value })}
-                />
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                <label htmlFor="new-role-access" style={{ fontSize: "13px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Visible Sidebar Menus</label>
-                {renderAccessPicker("new-role-access", newRole.sidebarAccess, (next) =>
-                  setNewRole({ ...newRole, sidebarAccess: next })
-                )}
-              </div>
-            </div>
-            
-            <PermissionGrid 
-              selectedPermissions={newRole.permissions} 
-              onChange={(next) => setNewRole({ ...newRole, permissions: next })} 
-            />
+          <div className="access-badge badge-success">
+            <span>✓</span> {permissions.length} / {totalPossiblePermissions} Enabled
+          </div>
 
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px", borderTop: "1px solid var(--border-color)", paddingTop: "20px" }}>
-              <button type="button" className="module-button secondary-button" onClick={() => setShowAddRole(false)}>Cancel</button>
-              <button type="submit" className="module-button" style={{ backgroundColor: "var(--color-primary)", color: "#fff", border: "none", padding: "0 24px" }} disabled={saving}>
-                {saving ? "Creating..." : "Save Role"}
-              </button>
-            </div>
-          </form>
-        </section>
-      )}
+          <select className="access-role-select" value={selectedRoleKey} onChange={handleRoleChange}>
+            {roles.map((role) => (
+              <option key={role.key} value={role.key}>
+                {role.label}
+              </option>
+            ))}
+          </select>
 
-      <div className="roles-table-shell" style={{ background: "var(--bg-surface)", borderRadius: "var(--radius-lg)", border: "1px solid var(--border-color)", overflow: "hidden", boxShadow: "var(--shadow-sm)" }}>
-        <DataTable
-          columns={[
-            { 
-              key: "role", 
-              label: "Role", 
-              render: (row) => editingKey === row.key ? (
-                <input 
-                  className="custom-input" 
-                  style={{ height: "36px", fontSize: "13px", padding: "0 10px", width: "100%", boxSizing: "border-box", borderRadius: "var(--radius-sm)" }} 
-                  value={editForm.label} 
-                  onChange={(e) => setEditForm({ ...editForm, label: e.target.value })} 
-                />
-              ) : (
-                <span style={{ fontWeight: "600", color: "var(--text-main)" }}>{row.role}</span>
-              )
-            },
-            { 
-              key: "type", 
-              label: "Type", 
-              render: (row) => row.isSystem ? (
-                <span className="role-system-tag" style={{ background: "rgba(33, 133, 243, 0.1)", color: "var(--color-primary)", padding: "4px 10px", borderRadius: "var(--radius-sm)", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" }}>System</span>
-              ) : (
-                <span className="role-custom-tag" style={{ background: "rgba(16, 185, 129, 0.1)", color: "#10B981", padding: "4px 10px", borderRadius: "var(--radius-sm)", fontSize: "11px", fontWeight: "700", textTransform: "uppercase" }}>Custom</span>
-              ) 
-            },
-            { 
-              key: "access", 
-              label: "Visible / Primary Access", 
-              render: (row) => editingKey === row.key ? (
-                <div className="role-edit-access-stack">
-                  {renderAccessPicker(`edit-role-access-${row.key}`, editForm.sidebarAccess, (next) =>
-                    setEditForm({ ...editForm, sidebarAccess: next })
-                  )}
-                </div>
-              ) : (
-                <span className="role-table-access-text" style={{ color: "var(--text-muted)", fontSize: "13px" }}>{row.access}</span>
-              ) 
-            },
-            { 
-              key: "actions", 
-              label: "Actions", 
-              render: (row) => editingKey === row.key ? (
-                <div className="role-row-actions">
-                  <button type="button" className="module-button" style={{ backgroundColor: "var(--color-primary)", color: "#fff", padding: "0 16px", height: "32px", fontSize: "12px", borderRadius: "var(--radius-sm)", border: "none" }} onClick={() => saveEdit(row)}>Save</button>
-                  <button type="button" className="module-button secondary-button" style={{ padding: "0 12px", height: "32px", fontSize: "12px", borderRadius: "var(--radius-sm)" }} onClick={cancelEdit}>Cancel</button>
-                </div>
-              ) : (
-                <div className="role-row-actions" style={{ display: "flex", gap: "8px" }}>
-                  <button type="button" className="module-button secondary-button" style={{ padding: "0 14px", height: "32px", fontSize: "12px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border-color)", color: "var(--text-main)" }} onClick={() => startEdit(row)}>Edit</button>
-                  <button 
-                    type="button" 
-                    className="module-button danger" 
-                    style={{ padding: "0 14px", height: "32px", fontSize: "12px", background: "#FEF2F2", borderColor: "#FECACA", color: "#DC2626", borderRadius: "var(--radius-sm)" }} 
-                    onClick={() => setDeleteTarget(row)}
-                  >
-                    Delete
-                  </button>
-                </div>
-              ) 
-            }
-          ]}
-          rows={roles}
-          expandable={true}
-          renderExpanded={(row) => (
-            editingKey === row.key ? (
-              <div style={{ padding: "20px", background: "var(--bg-subtle)", borderTop: "1px solid var(--border-color)" }}>
-                <PermissionGrid 
-                  selectedPermissions={editForm.permissions} 
-                  onChange={(next) => setEditForm({ ...editForm, permissions: next })} 
-                />
-              </div>
-            ) : (
-              <div style={{ padding: "20px", background: "var(--bg-subtle)", borderTop: "1px solid var(--border-color)" }}>
-                <h4 style={{ margin: "0 0 12px", fontSize: "14px", color: "var(--text-main)" }}>Assigned Permissions</h4>
-                {row.permissions && row.permissions.length > 0 ? (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-                    {row.permissions.map(p => {
-                      const option = PERMISSION_OPTIONS.find(opt => opt.value === p);
-                      return (
-                        <span key={p} style={{ background: "#fff", border: "1px solid var(--border-color)", padding: "4px 10px", borderRadius: "100px", fontSize: "12px", color: "var(--text-muted)", boxShadow: "0 1px 2px rgba(0,0,0,0.05)" }}>
-                          {option ? `${option.group}: ${option.label}` : p}
-                        </span>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <span style={{ fontSize: "13px", color: "var(--text-muted)" }}>No specific permissions assigned.</span>
-                )}
-              </div>
-            )
+          {roleUsers.length > 1 && (
+            <select
+              className="access-role-select"
+              value={selectedUserId}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedUserId(val);
+                if (val) {
+                  sessionStorage.setItem("active_user_id", val);
+                } else {
+                  sessionStorage.removeItem("active_user_id");
+                }
+              }}
+              style={selectedUserId ? { borderColor: "#2563eb", background: "#f0f7ff" } : {}}
+            >
+              <option value="">All Users (Role Default)</option>
+              {roleUsers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.name}
+                </option>
+              ))}
+            </select>
           )}
-        />
+
+          <div className="access-badge">
+            <FaUsers /> {employeeCount} Employee{employeeCount !== 1 ? "s" : ""}
+          </div>
+
+          <button type="button" className="access-btn access-btn-secondary" onClick={() => setIsAddingRole(true)} title="Add Custom Role">
+            + New Role
+          </button>
+
+          {selectedRole && !selectedRole.isSystem && (
+            <button type="button" className="access-btn access-btn-secondary" onClick={handleDeleteRole} style={{ color: "#ef4444", borderColor: "#fecaca" }} title="Delete Selected Role">
+              Delete Role
+            </button>
+          )}
+
+          {selectedUserId && (
+            <button
+              type="button"
+              className="access-btn"
+              onClick={handleResetToRoleDefault}
+              style={{ color: "#ef4444", borderColor: "#fecaca", background: "#fff5f5" }}
+              disabled={saving}
+            >
+              Reset to Role Default
+            </button>
+          )}
+
+          <button type="button" className="access-btn access-btn-primary" onClick={handleSaveAllChanges} disabled={saving}>
+            {saving ? "Saving..." : "Save All Changes"}
+          </button>
+        </div>
       </div>
 
-      <ConfirmDeleteModal
-        open={Boolean(deleteTarget)}
-        title="DELETE ROLE PERMANENTLY?"
-        message={
-          deleteTarget
-            ? `If you delete "${deleteTarget.role}", it will be removed from registration and access lists. Do you want to delete it?`
-            : ""
-        }
-        onCancel={() => setDeleteTarget(null)}
-        onConfirm={removeRole}
-      />
-    </>
+      <div className="access-cards-grid">
+        {ACCESS_MODULES.map((mod) => {
+          const pct = getCardAccess(mod);
+          return (
+            <div className="access-module-card" key={mod.key} onClick={() => handleOpenCard(mod)}>
+              <div className="access-card-icon-wrap">{mod.icon}</div>
+              <div className="access-card-main">
+                <span className="access-card-title">{mod.label}</span>
+                <span className="access-card-pct">{pct}%</span>
+              </div>
+              <div className="access-card-progress-bar">
+                <div className="access-card-progress-fill" style={{ width: `${pct}%` }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {isAddingRole && (
+        <div className="access-modal-overlay" onClick={() => setIsAddingRole(false)}>
+          <div className="access-modal-card" style={{ maxWidth: "400px" }} onClick={(e) => e.stopPropagation()}>
+            <div className="access-modal-header">
+              <h3 className="access-modal-title">Create Custom Role</h3>
+              <button type="button" className="access-modal-close-btn" onClick={() => setIsAddingRole(false)}>
+                &times;
+              </button>
+            </div>
+            <form onSubmit={handleAddRoleSubmit} style={{ padding: "20px" }}>
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{ display: "block", marginBottom: "8px", fontWeight: "600", fontSize: "13px", color: "#475569" }}>
+                  Role Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Guest Auditor"
+                  value={newRoleName}
+                  onChange={(e) => setNewRoleName(e.target.value)}
+                  style={{ width: "100%", padding: "10px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "14px" }}
+                  required
+                />
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                <button type="button" className="access-btn access-btn-secondary" onClick={() => setIsAddingRole(false)}>
+                  Cancel
+                </button>
+                <button type="submit" className="access-btn access-btn-primary">
+                  Save
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {selectedModule && (
+        <div className="access-modal-overlay" onClick={() => setSelectedModule(null)}>
+          <div className="access-modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="access-modal-header">
+              <div className="access-modal-title-wrap">
+                <span className="access-modal-icon">{selectedModule.icon}</span>
+                <h3 className="access-modal-title">{selectedModule.label} Module Access</h3>
+              </div>
+              <div className="access-modal-header-actions">
+                <button type="button" className="access-btn access-btn-secondary" onClick={() => handleEnableAllForModule(selectedModule)}>
+                  Enable All
+                </button>
+                <button type="button" className="access-btn access-btn-primary" onClick={handleSaveModalChanges}>
+                  Save Changes
+                </button>
+                <button type="button" className="access-modal-close-btn" onClick={() => setSelectedModule(null)}>
+                  <FaTimes />
+                </button>
+              </div>
+            </div>
+            <div className="access-modal-body">
+              <table className="access-table">
+                <thead>
+                  <tr>
+                    <th>Navigation Node / Page</th>
+                    <th>View</th>
+                    <th>Create</th>
+                    <th>Edit</th>
+                    <th>Delete</th>
+                    <th>Full Row</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedModule.nodes.map((node, idx) => {
+                    const nodePerms = [node.view, node.create, node.edit, node.delete].filter(Boolean);
+                    const allChecked = nodePerms.every((p) => tempPermissions.includes(p));
+
+                    return (
+                      <tr key={idx}>
+                        <td className="access-table-node-name">{node.label}</td>
+                        
+                        <td>
+                          {node.view ? (
+                            <input
+                              type="checkbox"
+                              className="access-checkbox"
+                              checked={tempPermissions.includes(node.view)}
+                              onChange={(e) => handleToggleTempPermission(node.view, e.target.checked)}
+                            />
+                          ) : "-"}
+                        </td>
+
+                        <td>
+                          {node.create ? (
+                            <input
+                              type="checkbox"
+                              className="access-checkbox"
+                              checked={tempPermissions.includes(node.create)}
+                              onChange={(e) => handleToggleTempPermission(node.create, e.target.checked)}
+                            />
+                          ) : "-"}
+                        </td>
+
+                        <td>
+                          {node.edit ? (
+                            <input
+                              type="checkbox"
+                              className="access-checkbox"
+                              checked={tempPermissions.includes(node.edit)}
+                              onChange={(e) => handleToggleTempPermission(node.edit, e.target.checked)}
+                            />
+                          ) : "-"}
+                        </td>
+
+                        <td>
+                          {node.delete ? (
+                            <input
+                              type="checkbox"
+                              className="access-checkbox"
+                              checked={tempPermissions.includes(node.delete)}
+                              onChange={(e) => handleToggleTempPermission(node.delete, e.target.checked)}
+                            />
+                          ) : "-"}
+                        </td>
+
+                        <td>
+                          <button
+                            type="button"
+                            className="access-btn-all"
+                            onClick={() => handleAllRowTempPermission(node, !allChecked)}
+                          >
+                            {allChecked ? "Clear" : "All"}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -1540,6 +1862,7 @@ export function ScanDemo() {
   const { assetListData } = useModuleData();
   const dispatch = useDispatch();
   const { showToast } = useToast();
+  const { user } = useSelector((state) => state.auth);
   const [searchTerm, setSearchTerm] = useState("");
   const [refreshing, setRefreshing] = useState(false);
 
@@ -1565,7 +1888,19 @@ export function ScanDemo() {
     }
   };
 
-  const filteredAssets = assetListData.filter(a => 
+  const isEmployee = user?.role === "EMPLOYEE";
+
+  const visibleAssets = isEmployee
+    ? assetListData.filter((asset) => {
+        const assignedId = asset.assignedTo?._id || asset.assignedTo?.id || asset.assignedTo;
+        const matchesId = assignedId && String(assignedId) === String(user._id || user.id);
+        const matchesEmpId = user.employeeId && asset.employeeId && String(asset.employeeId).toLowerCase() === String(user.employeeId).toLowerCase();
+        const matchesName = asset.assignedTo?.name && String(asset.assignedTo.name).toLowerCase() === String(user.name).toLowerCase();
+        return matchesId || matchesEmpId || matchesName;
+      })
+    : assetListData;
+
+  const filteredAssets = visibleAssets.filter(a => 
     (a.assetName || "").toLowerCase().includes(searchTerm.toLowerCase()) || 
     (a.assetCode || "").toLowerCase().includes(searchTerm.toLowerCase())
   );

@@ -337,12 +337,21 @@ function AppLayout() {
     });
   }, [user]);
 
-  useEffect(() => {
+  const loadRolesData = () => {
     fetchRoles()
       .then(setRoles)
       .catch(() => setRoles([]));
+  };
+
+  useEffect(() => {
+    loadRolesData();
     dispatch(fetchAssetList());
-  }, [dispatch]);
+  }, [dispatch, location.pathname]);
+
+  useEffect(() => {
+    window.addEventListener("roles-updated", loadRolesData);
+    return () => window.removeEventListener("roles-updated", loadRolesData);
+  }, []);
 
   useEffect(() => {
     if (user?.role && assetListData.length) {
@@ -468,9 +477,9 @@ function AppLayout() {
   }, [location.pathname, user]);
 
   const role = roles.find((item) => item.key === user?.role);
-  const roleAccess = role?.sidebarAccess?.length
-    ? role.sidebarAccess
-    : role?.access || "";
+  const roleAccess = user?.hasCustomPermissions && user?.sidebarAccess?.length
+    ? user.sidebarAccess
+    : (role?.sidebarAccess?.length ? role.sidebarAccess : role?.access || "");
 
   const visibleNavItems = navItems.map((item) => {
     if (item.children) {

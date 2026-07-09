@@ -57,12 +57,16 @@ const normalizeAssetPayload = (payload) => {
     });
   }
 
-  if (data.assignedTo && data.assignedTo !== "") {
-    data.assetStatus = "ASSIGNED";
-  } else {
-    data.assignedTo = null;
-    if (data.assetStatus === "ASSIGNED" || !data.assetStatus) {
-      data.assetStatus = "AVAILABLE";
+  if (payload.assignedTo !== undefined || payload.assetStatus !== undefined) {
+    if (data.assignedTo && data.assignedTo !== "") {
+      data.assetStatus = "ASSIGNED";
+    } else {
+      if (payload.assignedTo !== undefined) {
+        data.assignedTo = null;
+      }
+      if (payload.assetStatus !== undefined && (data.assetStatus === "ASSIGNED" || !data.assetStatus)) {
+        data.assetStatus = "AVAILABLE";
+      }
     }
   }
 

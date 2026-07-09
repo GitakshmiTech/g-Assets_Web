@@ -116,6 +116,16 @@ export const updateUser = async (req, res) => {
     if (department) user.department = department;
     if (status) user.status = String(status).toUpperCase();
 
+    if (req.body.hasOwnProperty("permissions")) {
+      user.permissions = req.body.permissions;
+    }
+    if (req.body.hasOwnProperty("sidebarAccess")) {
+      user.sidebarAccess = req.body.sidebarAccess;
+    }
+    if (req.body.hasOwnProperty("hasCustomPermissions")) {
+      user.hasCustomPermissions = req.body.hasCustomPermissions;
+    }
+
     if (password) {
       user.setPassword(password);
     }

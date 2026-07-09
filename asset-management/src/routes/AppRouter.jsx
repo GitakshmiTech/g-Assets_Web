@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation, Outlet } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { updateUserSession } from "../store/slices/authSlice";
+import { updateUserSession, fetchCurrentUser } from "../store/slices/authSlice";
 import AppLayout from "../components/layout/AppLayout";
 import AssetDetails from "../components/AssetDetails";
 import AddAsset from "../components/AddAsset";
@@ -110,9 +110,8 @@ function RequireAuth() {
   const [roles, setRoles] = useState([]);
   const [rolesLoaded, setRolesLoaded] = useState(false);
 
-  useEffect(() => {
-    let active = true;
-    if (!token) return undefined;
+  const loadRolesAndSync = (active = true) => {
+    dispatch(fetchCurrentUser());
 
     fetchRoles()
       .then((data) => {
@@ -123,7 +122,7 @@ function RequireAuth() {
           if (user && user.role) {
             const userRoleValue = normalizeRoleValue(user.role);
             const userRoleData = data.find((item) => item.key === userRoleValue);
-            if (userRoleData && JSON.stringify(user.permissions || []) !== JSON.stringify(userRoleData.permissions || [])) {
+            if (!user.hasCustomPermissions && userRoleData && JSON.stringify(user.permissions || []) !== JSON.stringify(userRoleData.permissions || [])) {
               dispatch(updateUserSession({ ...user, permissions: userRoleData.permissions || [] }));
             }
           }
@@ -135,11 +134,18 @@ function RequireAuth() {
           setRolesLoaded(true);
         }
       });
+  };
 
-    return () => {
-      active = false;
-    };
-  }, [token]);
+  useEffect(() => {
+    if (!token) return undefined;
+    loadRolesAndSync(true);
+  }, [token, location.pathname]);
+
+  useEffect(() => {
+    const handler = () => loadRolesAndSync(true);
+    window.addEventListener("roles-updated", handler);
+    return () => window.removeEventListener("roles-updated", handler);
+  }, []);
 
   if (!user || !token) {
     return <Navigate to="/login" state={{ from: location }} replace />;
@@ -154,9 +160,14 @@ function RequireAuth() {
 
   const userRole = normalizeRoleValue(user.role);
   const role = roles.find((item) => item.key === userRole);
-  const roleAccess = role?.sidebarAccess?.length ? role.sidebarAccess : role?.access || "";
+  const roleAccess = user?.hasCustomPermissions && user?.sidebarAccess?.length
+    ? user.sidebarAccess
+    : (role?.sidebarAccess?.length ? role.sidebarAccess : role?.access || "");
+  const userPermissions = user?.hasCustomPermissions
+    ? (user.permissions || [])
+    : (role?.permissions || []);
 
-  if (!canAccessRoute(userRole, location.pathname, roleAccess, role?.permissions || [])) {
+  if (!canAccessRoute(userRole, location.pathname, roleAccess, userPermissions)) {
     const targetHome = getRoleHome(userRole, roleAccess);
     if (location.pathname === targetHome || location.pathname === "/") {
       return <Navigate to="/profile" replace />;
