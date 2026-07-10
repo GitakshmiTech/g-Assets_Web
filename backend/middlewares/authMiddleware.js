@@ -12,7 +12,7 @@ export const authenticate = async (req, res, next) => {
       return res.status(401).json({ success: false, message: "Authentication required" });
     }
 
-    const user = await User.findById(payload.sub);
+    const user = await User.findById(payload.sub).populate("companyId");
 
     if (!user || user.status !== "ACTIVE") {
       return res.status(401).json({ success: false, message: "User is not active" });

@@ -77,7 +77,7 @@ import fs from 'fs';
 const startLocalMongo = () => {
   return new Promise((resolve) => {
     const mongodPath = "C:\\Program Files\\MongoDB\\Server\\8.3\\bin\\mongod.exe";
-    const dbPath = "C:\\Users\\ASUS\\Desktop\\bruno\\Expense-management-system\\server\\.mongo-data";
+    const dbPath = path.join(__dirname, "mongodb_data");
 
     if (fs.existsSync(mongodPath)) {
       console.log("Auto-starting local MongoDB service...");

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { PageTitle, KpiGrid, DataTable } from "../../components/common/ModuleComponents";
-import { FaUserPlus, FaSearch, FaUserShield, FaEnvelope, FaCheckCircle, FaTimesCircle, FaCalendarAlt, FaTrash, FaEdit } from "react-icons/fa";
+import { FaUserPlus, FaSearch, FaUserShield, FaEnvelope, FaCheckCircle, FaTimesCircle, FaCalendarAlt, FaTrash, FaEdit, FaEye, FaEyeSlash } from "react-icons/fa";
 import apiInstance from "../../apis/apiConfig";
 import { fetchRoles } from "../../utils/roleApi";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -12,6 +12,7 @@ export default function UsersPage() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
   const [focusedField, setFocusedField] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const { hasPermission, isAdmin } = usePermissions();
 
   // Mock list of initial users
@@ -198,20 +199,33 @@ export default function UsersPage() {
       label: "User Details",
       render: (row) => (
         <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-          <div style={{
-            width: "36px",
-            height: "36px",
-            borderRadius: "50%",
-            background: "linear-gradient(135deg, #0d9488, #0f766e)",
-            color: "#ffffff",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            fontWeight: "700",
-            fontSize: "13px"
-          }}>
-            {getInitials(row.name)}
-          </div>
+          {row.profilePhoto ? (
+            <img
+              src={row.profilePhoto}
+              alt={row.name}
+              style={{
+                width: "36px",
+                height: "36px",
+                borderRadius: "50%",
+                objectFit: "cover"
+              }}
+            />
+          ) : (
+            <div style={{
+              width: "36px",
+              height: "36px",
+              borderRadius: "50%",
+              background: "linear-gradient(135deg, #0d9488, #0f766e)",
+              color: "#ffffff",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontWeight: "700",
+              fontSize: "13px"
+            }}>
+              {getInitials(row.name)}
+            </div>
+          )}
           <div>
             <div style={{ fontWeight: "600", color: "var(--text-main)" }}>{row.name}</div>
             <div style={{ fontSize: "11px", color: "var(--text-muted)", display: "flex", alignItems: "center", gap: "4px" }}>
@@ -269,7 +283,7 @@ export default function UsersPage() {
       label: "Last Active",
       render: (row) => (
         <span style={{ color: "var(--text-muted)", fontSize: "12px", display: "flex", alignItems: "center", gap: "4px" }}>
-          <FaCalendarAlt style={{ fontSize: "11px" }} /> {row.lastActive}
+          <FaCalendarAlt style={{ fontSize: "11px" }} /> {row.lastActive || "-"}
         </span>
       )
     },
@@ -277,7 +291,7 @@ export default function UsersPage() {
       key: "actions",
       label: "Actions",
       render: (row) => (
-        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+        <div style={{ display: "flex", gap: "8px", justifyContent: "flex-start" }}>
           {(hasPermission("user.edit") || isAdmin) && (
             <button
               onClick={() => toggleStatus(row.id, row.status)}
@@ -441,6 +455,7 @@ export default function UsersPage() {
                   setShowAddModal(false);
                   setEditingUserId(null);
                   setFormData({ name: "", email: "", password: "", employeeId: "", role: "EMPLOYEE", status: "ACTIVE", department: "" });
+                  setShowPassword(false);
                 }}
                 style={{
                   background: "none",
@@ -554,30 +569,51 @@ export default function UsersPage() {
                 <label style={{ fontSize: "11px", fontWeight: "700", color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.05em" }}>
                   {editingUserId ? "Change Password (Optional)" : "Initial Password"}
                 </label>
-                <input
-                  type="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  placeholder={editingUserId ? "Leave blank to keep unchanged" : "e.g. UserSecure123!"}
-                  required={!editingUserId}
-                  onFocus={() => setFocusedField("password")}
-                  onBlur={() => setFocusedField("")}
-                  style={{
-                    width: "100%",
-                    height: "40px",
-                    padding: "0 14px",
-                    fontSize: "13px",
-                    borderRadius: "8px",
-                    border: focusedField === "password" ? "1px solid var(--color-primary)" : "1px solid var(--border-color)",
-                    boxShadow: focusedField === "password" ? "0 0 0 3px rgba(33, 133, 243, 0.15)" : "var(--shadow-sm)",
-                    backgroundColor: "var(--bg-surface)",
-                    color: "var(--text-main)",
-                    transition: "all 0.2s ease",
-                    outline: "none",
-                    boxSizing: "border-box"
-                  }}
-                />
+                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={formData.password}
+                    onChange={handleInputChange}
+                    placeholder={editingUserId ? "Leave blank to keep unchanged" : "e.g. UserSecure123!"}
+                    required={!editingUserId}
+                    onFocus={() => setFocusedField("password")}
+                    onBlur={() => setFocusedField("")}
+                    style={{
+                      width: "100%",
+                      height: "40px",
+                      padding: "0 40px 0 14px",
+                      fontSize: "13px",
+                      borderRadius: "8px",
+                      border: focusedField === "password" ? "1px solid var(--color-primary)" : "1px solid var(--border-color)",
+                      boxShadow: focusedField === "password" ? "0 0 0 3px rgba(33, 133, 243, 0.15)" : "var(--shadow-sm)",
+                      backgroundColor: "var(--bg-surface)",
+                      color: "var(--text-main)",
+                      transition: "all 0.2s ease",
+                      outline: "none",
+                      boxSizing: "border-box"
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: "absolute",
+                      right: "12px",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: "var(--text-muted)",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      padding: "4px"
+                    }}
+                    title={showPassword ? "Hide Password" : "Show Password"}
+                  >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
               </div>
 
               {/* Employee ID Field */}
@@ -732,6 +768,7 @@ export default function UsersPage() {
                     setShowAddModal(false);
                     setEditingUserId(null);
                     setFormData({ name: "", email: "", password: "", employeeId: "", role: "EMPLOYEE", status: "ACTIVE", department: "" });
+                    setShowPassword(false);
                   }}
                   style={{
                     height: "40px",

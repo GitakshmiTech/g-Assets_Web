@@ -133,6 +133,8 @@ userSchema.methods.verifyPassword = function verifyPassword(password) {
 };
 
 userSchema.methods.toSafeJSON = function toSafeJSON() {
+  const lastActiveDate = this.updatedAt || this.createdAt;
+  const hasPopulatedCompany = this.companyId && typeof this.companyId === "object" && this.companyId.companyName;
   return {
     id: this._id,
     name: this.name,
@@ -144,11 +146,16 @@ userSchema.methods.toSafeJSON = function toSafeJSON() {
     department: this.department,
     phoneNumber: this.phoneNumber,
     profilePhoto: this.profilePhoto,
-    companyId: this.companyId,
+    companyId: hasPopulatedCompany ? this.companyId._id : this.companyId,
+    companyName: hasPopulatedCompany ? this.companyId.companyName : "",
+    companyWebsite: hasPopulatedCompany ? this.companyId.website : "",
+    companyPhone: hasPopulatedCompany ? this.companyId.phone : "",
+    companyIndustry: hasPopulatedCompany ? this.companyId.industry : "",
     branchId: this.branchId,
     permissions: this.permissions || [],
     sidebarAccess: this.sidebarAccess || [],
     hasCustomPermissions: this.hasCustomPermissions || false,
+    lastActive: lastActiveDate ? new Date(lastActiveDate).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "2-digit" }) : "-",
   };
 };
 

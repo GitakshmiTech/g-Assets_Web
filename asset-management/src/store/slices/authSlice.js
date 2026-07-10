@@ -26,6 +26,7 @@ const saveSession = ({ token, user }) => {
 const clearSession = () => {
   Cookies.remove("token");
   localStorage.removeItem("authUser");
+  localStorage.removeItem("assetpro_app_notifications");
 };
 
 export const loginUser = createAsyncThunk("auth/login", async (payload, thunkAPI) => {

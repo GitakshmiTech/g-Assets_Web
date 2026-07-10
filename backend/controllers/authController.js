@@ -229,6 +229,9 @@ export const login = async (req, res) => {
     }
 
     // Bypass MFA and directly issue token on successful credentials verification
+    if (user.companyId) {
+      await user.populate("companyId");
+    }
     const token = createToken(user);
 
     return res.status(200).json({
@@ -320,9 +323,23 @@ export const updateProfile = async (req, res) => {
 
     await user.save();
 
-    if (user.role === "COMPANY_ADMIN" && user.companyId && profilePhoto !== undefined) {
+    if (user.role === "COMPANY_ADMIN" && user.companyId) {
       const Company = (await import("../models/Company.js")).default;
-      await Company.findByIdAndUpdate(user.companyId, { logo: user.profilePhoto });
+      const companyUpdates = {};
+      
+      if (req.body.companyName !== undefined) companyUpdates.companyName = req.body.companyName;
+      if (req.body.companyWebsite !== undefined) companyUpdates.website = req.body.companyWebsite;
+      if (req.body.companyPhone !== undefined) companyUpdates.phone = req.body.companyPhone;
+      if (req.body.companyIndustry !== undefined) companyUpdates.industry = req.body.companyIndustry;
+      if (profilePhoto !== undefined) companyUpdates.logo = user.profilePhoto;
+
+      if (Object.keys(companyUpdates).length > 0) {
+        await Company.findByIdAndUpdate(user.companyId, companyUpdates);
+      }
+    }
+
+    if (user.companyId) {
+      await user.populate("companyId");
     }
 
     res.status(200).json({

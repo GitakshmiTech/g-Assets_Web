@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import apiInstance from "../apis/apiConfig";
 import { useToast } from "../components/toast/toastStore";
@@ -20,9 +20,31 @@ function Profile() {
     department: user?.department || "",
     phoneNumber: user?.phoneNumber || "",
     profilePhoto: user?.profilePhoto || "",
+    companyName: user?.companyName || "",
+    companyWebsite: user?.companyWebsite || "",
+    companyPhone: user?.companyPhone || "",
+    companyIndustry: user?.companyIndustry || "",
     newPassword: "",
     confirmPassword: "",
   });
+
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        name: user.name || "",
+        email: user.email || "",
+        employeeId: user.employeeId || "",
+        department: user.department || "",
+        phoneNumber: user.phoneNumber || "",
+        profilePhoto: user.profilePhoto || "",
+        companyName: user.companyName || "",
+        companyWebsite: user.companyWebsite || "",
+        companyPhone: user.companyPhone || "",
+        companyIndustry: user.companyIndustry || "",
+      }));
+    }
+  }, [user]);
 
   const [isSaving, setIsSaving] = useState(false);
   const [showPasswordSection, setShowPasswordSection] = useState(false);
@@ -86,11 +108,19 @@ function Profile() {
       const payload = {
         name: formData.name,
         email: formData.email,
-        employeeId: formData.employeeId,
-        department: formData.department,
         phoneNumber: formData.phoneNumber,
         profilePhoto: formData.profilePhoto,
       };
+
+      if (user?.role === "COMPANY_ADMIN") {
+        payload.companyName = formData.companyName;
+        payload.companyWebsite = formData.companyWebsite;
+        payload.companyPhone = formData.companyPhone;
+        payload.companyIndustry = formData.companyIndustry;
+      } else {
+        payload.employeeId = formData.employeeId;
+        payload.department = formData.department;
+      }
 
       if (showPasswordSection && formData.newPassword) {
         payload.newPassword = formData.newPassword;
@@ -322,12 +352,25 @@ function Profile() {
               </div>
 
               <div style={{ fontSize: "13px", color: "var(--text-muted)", lineHeight: 1.6 }}>
-                <p style={{ margin: "8px 0 0 0" }}>
-                  Employee ID: <span style={{ fontWeight: 600, color: "var(--text-main)" }}>{formData.employeeId || "Not assigned"}</span>
-                </p>
-                <p style={{ margin: "4px 0 0 0" }}>
-                  Department: <span style={{ fontWeight: 600, color: "var(--text-main)" }}>{formData.department || "Not assigned"}</span>
-                </p>
+                {user?.role === "COMPANY_ADMIN" ? (
+                  <>
+                    <p style={{ margin: "8px 0 0 0" }}>
+                      Company Name: <span style={{ fontWeight: 600, color: "var(--text-main)" }}>{formData.companyName || "Not assigned"}</span>
+                    </p>
+                    <p style={{ margin: "4px 0 0 0" }}>
+                      Official Website: <span style={{ fontWeight: 600, color: "var(--text-main)" }}>{formData.companyWebsite || "Not assigned"}</span>
+                    </p>
+                  </>
+                ) : user?.role === "SUPER_ADMIN" ? null : (
+                  <>
+                    <p style={{ margin: "8px 0 0 0" }}>
+                      Employee ID: <span style={{ fontWeight: 600, color: "var(--text-main)" }}>{formData.employeeId || "Not assigned"}</span>
+                    </p>
+                    <p style={{ margin: "4px 0 0 0" }}>
+                      Department: <span style={{ fontWeight: 600, color: "var(--text-main)" }}>{formData.department || "Not assigned"}</span>
+                    </p>
+                  </>
+                )}
               </div>
             </div>
           </div>
@@ -386,33 +429,82 @@ function Profile() {
                 />
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label htmlFor="employeeId" style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Employee ID</label>
-                <input
-                  type="text"
-                  id="employeeId"
-                  name="employeeId"
-                  className="custom-input"
-                  style={{ height: "36px", padding: "0 12px", fontSize: "13px", boxSizing: "border-box" }}
-                  value={formData.employeeId}
-                  onChange={handleInputChange}
-                  placeholder="e.g. EMP-1048"
-                />
-              </div>
+              {user?.role === "COMPANY_ADMIN" ? (
+                <>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label htmlFor="companyName" style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Company Name *</label>
+                    <input
+                      type="text"
+                      id="companyName"
+                      name="companyName"
+                      className="custom-input"
+                      style={{ height: "36px", padding: "0 12px", fontSize: "13px", boxSizing: "border-box" }}
+                      value={formData.companyName}
+                      onChange={handleInputChange}
+                      required
+                      placeholder="Enter company name"
+                    />
+                  </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                <label htmlFor="department" style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Department</label>
-                <input
-                  type="text"
-                  id="department"
-                  name="department"
-                  className="custom-input"
-                  style={{ height: "36px", padding: "0 12px", fontSize: "13px", boxSizing: "border-box" }}
-                  value={formData.department}
-                  onChange={handleInputChange}
-                  placeholder="e.g. IT Operations"
-                />
-              </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label htmlFor="companyWebsite" style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Official Website</label>
+                    <input
+                      type="text"
+                      id="companyWebsite"
+                      name="companyWebsite"
+                      className="custom-input"
+                      style={{ height: "36px", padding: "0 12px", fontSize: "13px", boxSizing: "border-box" }}
+                      value={formData.companyWebsite}
+                      onChange={handleInputChange}
+                      placeholder="e.g. www.example.com"
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label htmlFor="companyIndustry" style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Industry/Domain</label>
+                    <input
+                      type="text"
+                      id="companyIndustry"
+                      name="companyIndustry"
+                      className="custom-input"
+                      style={{ height: "36px", padding: "0 12px", fontSize: "13px", boxSizing: "border-box" }}
+                      value={formData.companyIndustry}
+                      onChange={handleInputChange}
+                      placeholder="e.g. IT, Finance"
+                    />
+                  </div>
+                </>
+              ) : user?.role === "SUPER_ADMIN" ? null : (
+                <>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label htmlFor="employeeId" style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Employee ID</label>
+                    <input
+                      type="text"
+                      id="employeeId"
+                      name="employeeId"
+                      className="custom-input"
+                      style={{ height: "36px", padding: "0 12px", fontSize: "13px", boxSizing: "border-box" }}
+                      value={formData.employeeId}
+                      onChange={handleInputChange}
+                      placeholder="e.g. EMP-1048"
+                    />
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                    <label htmlFor="department" style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Department</label>
+                    <input
+                      type="text"
+                      id="department"
+                      name="department"
+                      className="custom-input"
+                      style={{ height: "36px", padding: "0 12px", fontSize: "13px", boxSizing: "border-box" }}
+                      value={formData.department}
+                      onChange={handleInputChange}
+                      placeholder="e.g. IT Operations"
+                    />
+                  </div>
+                </>
+              )}
 
               <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                 <label htmlFor="phoneNumber" style={{ fontSize: "12px", fontWeight: "600", color: "var(--text-muted)", textTransform: "uppercase" }}>Phone Number</label>
